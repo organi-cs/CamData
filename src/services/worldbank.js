@@ -1,4 +1,4 @@
-import { getCached, setCached } from './supabase';
+import { getCached, setCached, supabase } from './supabase';
 
 const WB_BASE = 'https://api.worldbank.org/v2';
 const COUNTRY = 'KHM'; // Cambodia ISO 3166-1 alpha-3
@@ -35,6 +35,22 @@ export const INDICATORS = {
  * @param {{ startYear?: number, endYear?: number }} options
  */
 export async function fetchIndicator(indicatorCode, { startYear = 2000, endYear = 2024 } = {}) {
+  if (supabase) {
+    const { data: storedSeries, error } = await supabase
+      .from('indicators')
+      .select('year, value')
+      .eq('indicator_code', indicatorCode)
+      .gte('year', startYear)
+      .lte('year', endYear)
+      .order('year', { ascending: true });
+
+    if (!error && storedSeries?.length) {
+      return storedSeries
+        .filter(point => point.value !== null)
+        .map(point => ({ year: Number(point.year), value: point.value }));
+    }
+  }
+
   const cacheKey = `wb:${COUNTRY}:${indicatorCode}:${startYear}-${endYear}`;
 
   const cached = await getCached(cacheKey);

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, ArrowRight, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -10,137 +10,46 @@ import {
 import { DataCard } from '../components/features/DataCard';
 import { RomduolIconOutline } from '../components/ui/RomduolIcon';
 import { DATA_CLUSTERS, MINISTRIES } from '../types';
+import { fetchIndicators, INDICATORS } from '../services/worldbank';
 import '../styles/design-tokens.css';
 
-const TOPIC_DATA = {
-  finance: {
-    indicators: [
-      { label: 'USD/KHR Rate', value: '4,120', unit: 'KHR', change: +0.24, source: 'NBC' },
-      { label: 'CSX Index', value: '481.25', unit: 'pts', change: +0.45, source: 'CSX' },
-      { label: 'Total Deposits', value: '$47.2B', unit: '', change: +8.3, source: 'NBC' },
-      { label: 'Microfinance Loans', value: '$9.8B', unit: '', change: +12.1, source: 'NBC' },
-    ],
-    chart1: {
-      title: 'USD/KHR Exchange Rate (2024)',
-      data: [
-        { label: 'Jan', value: 4100 }, { label: 'Feb', value: 4095 }, { label: 'Mar', value: 4102 },
-        { label: 'Apr', value: 4098 }, { label: 'May', value: 4105 }, { label: 'Jun', value: 4110 },
-        { label: 'Jul', value: 4108 }, { label: 'Aug', value: 4115 }, { label: 'Sep', value: 4112 },
-        { label: 'Oct', value: 4120 }, { label: 'Nov', value: 4118 }, { label: 'Dec', value: 4125 },
-      ],
-      type: 'line',
-      color: '#FFCC33',
-    },
-    chart2: {
-      title: 'CSX Market Index (2024)',
-      data: [
-        { label: 'Jan', value: 456 }, { label: 'Feb', value: 462 }, { label: 'Mar', value: 471 },
-        { label: 'Apr', value: 465 }, { label: 'May', value: 478 }, { label: 'Jun', value: 472 },
-        { label: 'Jul', value: 481 }, { label: 'Aug', value: 488 }, { label: 'Sep', value: 479 },
-        { label: 'Oct', value: 481 }, { label: 'Nov', value: 476 }, { label: 'Dec', value: 492 },
-      ],
-      type: 'area',
-      color: '#0ea5e9',
-    },
-  },
-  agriculture: {
-    indicators: [
-      { label: 'Rice Exports (Jan)', value: '75,000 t', unit: '', change: +8.7, source: 'MAFF' },
-      { label: 'Rubber Production', value: '182,000 t', unit: '', change: +5.2, source: 'MAFF' },
-      { label: 'Cassava Yield', value: '1.15M t', unit: '', change: +6.5, source: 'MAFF' },
-      { label: 'Arable Land', value: '4.2M ha', unit: '', change: +1.1, source: 'MAFF' },
-    ],
-    chart1: {
-      title: 'Monthly Rice Exports (tonnes)',
-      data: [
-        { label: 'Jan', value: 45000 }, { label: 'Feb', value: 52000 }, { label: 'Mar', value: 48000 },
-        { label: 'Apr', value: 55000 }, { label: 'May', value: 61000 }, { label: 'Jun', value: 58000 },
-        { label: 'Jul', value: 65000 }, { label: 'Aug', value: 72000 }, { label: 'Sep', value: 68000 },
-        { label: 'Oct', value: 75000 }, { label: 'Nov', value: 78000 }, { label: 'Dec', value: 82000 },
-      ],
-      type: 'bar',
-      color: '#84CC16',
-    },
-    chart2: {
-      title: 'Rubber Production by Year (thousand tonnes)',
-      data: [
-        { label: '2018', value: 145 }, { label: '2019', value: 152 }, { label: '2020', value: 148 },
-        { label: '2021', value: 160 }, { label: '2022', value: 165 }, { label: '2023', value: 172 },
-        { label: '2024', value: 182 },
-      ],
-      type: 'area',
-      color: '#84CC16',
-    },
-  },
-  tourism: {
-    indicators: [
-      { label: 'Angkor Visitors (Dec)', value: '158,000', unit: '', change: +17.0, source: 'APSARA' },
-      { label: 'International Arrivals', value: '750,000/mo', unit: '', change: +14.5, source: 'MOT' },
-      { label: 'Tourism Revenue', value: '$3.9B', unit: '', change: +22.0, source: 'MOT' },
-      { label: 'Hotels Licensed', value: '4,200', unit: '', change: +3.2, source: 'MOT' },
-    ],
-    chart1: {
-      title: 'Angkor Visitors by Month (thousands)',
-      data: [
-        { label: 'Jan', value: 125 }, { label: 'Feb', value: 142 }, { label: 'Mar', value: 138 },
-        { label: 'Apr', value: 95 }, { label: 'May', value: 78 }, { label: 'Jun', value: 82 },
-        { label: 'Jul', value: 98 }, { label: 'Aug', value: 105 }, { label: 'Sep', value: 88 },
-        { label: 'Oct', value: 115 }, { label: 'Nov', value: 135 }, { label: 'Dec', value: 158 },
-      ],
-      type: 'area',
-      color: '#A855F7',
-    },
-    chart2: {
-      title: 'International Arrivals by Month (thousands)',
-      data: [
-        { label: 'Jan', value: 450 }, { label: 'Feb', value: 520 }, { label: 'Mar', value: 480 },
-        { label: 'Apr', value: 550 }, { label: 'May', value: 610 }, { label: 'Jun', value: 580 },
-        { label: 'Jul', value: 650 }, { label: 'Aug', value: 720 }, { label: 'Sep', value: 680 },
-        { label: 'Oct', value: 750 }, { label: 'Nov', value: 690 }, { label: 'Dec', value: 810 },
-      ],
-      type: 'bar',
-      color: '#A855F7',
-    },
-  },
-  garment: {
-    indicators: [
-      { label: 'Employed Workers', value: '760,000', unit: '', change: +1.3, source: 'MIH' },
-      { label: 'Export Value (Jan)', value: '$1.15B', unit: '', change: +6.7, source: 'MOC' },
-      { label: 'Factories Active', value: '1,050', unit: '', change: -0.5, source: 'MIH' },
-      { label: 'SEZ Occupancy', value: '82%', unit: '', change: +4.1, source: 'CSEZB' },
-    ],
-    chart1: {
-      title: 'Garment Factory Employment (thousands)',
-      data: [
-        { label: 'Jan', value: 720 }, { label: 'Feb', value: 715 }, { label: 'Mar', value: 730 },
-        { label: 'Apr', value: 725 }, { label: 'May', value: 740 }, { label: 'Jun', value: 738 },
-        { label: 'Jul', value: 745 }, { label: 'Aug', value: 750 }, { label: 'Sep', value: 755 },
-        { label: 'Oct', value: 760 }, { label: 'Nov', value: 758 }, { label: 'Dec', value: 762 },
-      ],
-      type: 'line',
-      color: '#F97316',
-    },
-    chart2: {
-      title: 'Monthly Garment Export Value ($M)',
-      data: [
-        { label: 'Jan', value: 850 }, { label: 'Feb', value: 920 }, { label: 'Mar', value: 880 },
-        { label: 'Apr', value: 950 }, { label: 'May', value: 1020 }, { label: 'Jun', value: 980 },
-        { label: 'Jul', value: 1050 }, { label: 'Aug', value: 1120 }, { label: 'Sep', value: 1080 },
-        { label: 'Oct', value: 1150 }, { label: 'Nov', value: 1200 }, { label: 'Dec', value: 1280 },
-      ],
-      type: 'bar',
-      color: '#F97316',
-    },
-  },
-  'mekong-water': {
-    indicators: [
-      { label: 'Mekong Level (Kratie)', value: '8.0 m', unit: '', change: -2.4, source: 'MOWRAM' },
-      { label: 'Tonle Sap (Phnom Penh)', value: '3.2 m', unit: '', change: -18.0, source: 'MOWRAM' },
-      { label: 'Flood Alerts Active', value: '3', unit: '', change: 0, source: 'MOWRAM' },
-      { label: 'Rainfall (Monthly)', value: '142 mm', unit: '', change: +12.0, source: 'MOWRAM' },
-    ],
-    chart1: {
-      title: 'Mekong River Level at Kratie (m)',
+// Supplementary static indicators for data WB doesn't cover
+const STATIC_CARDS = {
+  finance: [
+    { label: 'USD/KHR Rate', value: '4,120', source: 'NBC', note: 'live feed' },
+    { label: 'CSX Index', value: '481.25 pts', source: 'CSX', note: 'Apr 2026' },
+  ],
+  agriculture: [
+    { label: 'Rice Exports (est.)', value: '75,000 t', source: 'MAFF', note: 'Jan 2025' },
+    { label: 'Cassava Yield (est.)', value: '1.15M t', source: 'MAFF', note: '2024' },
+  ],
+  tourism: [
+    { label: 'Angkor Visitors (est.)', value: '158,000', source: 'APSARA', note: 'Dec 2024' },
+    { label: 'Tourism Revenue (est.)', value: '$3.9B', source: 'MOT', note: '2024' },
+  ],
+  garment: [
+    { label: 'Active Factories (est.)', value: '1,050', source: 'MIH', note: '2025' },
+    { label: 'Workers Employed (est.)', value: '760,000', source: 'MIH', note: '2025' },
+  ],
+  'mekong-water': [
+    { label: 'Mekong Level — Kratie', value: '8.0 m', source: 'MOWRAM', note: 'seasonal' },
+    { label: 'Tonle Sap — Phnom Penh', value: '3.2 m', source: 'MOWRAM', note: 'seasonal' },
+    { label: 'Flood Alerts Active', value: '3', source: 'MOWRAM', note: 'current' },
+    { label: 'Monthly Rainfall', value: '142 mm', source: 'MOWRAM', note: 'Nov 2024' },
+  ],
+  'urban-mobility': [
+    { label: 'Daily Traffic Incidents', value: '47', source: 'MPWT', note: 'Phnom Penh' },
+    { label: 'Bus Ridership / Day', value: '17,200', source: 'MPWT', note: '2024' },
+    { label: 'Registered Vehicles', value: '3.6M', source: 'MPWT', note: '2024' },
+    { label: 'Road Network', value: '62,000 km', source: 'MPWT', note: '2024' },
+  ],
+};
+
+// Static chart data for clusters with no World Bank coverage
+const STATIC_CHARTS = {
+  'mekong-water': [
+    {
+      title: 'Mekong River Level at Kratie (m) — seasonal pattern',
       data: [
         { label: 'Jan', value: 4.2 }, { label: 'Feb', value: 3.8 }, { label: 'Mar', value: 3.5 },
         { label: 'Apr', value: 3.8 }, { label: 'May', value: 6.1 }, { label: 'Jun', value: 8.7 },
@@ -148,10 +57,9 @@ const TOPIC_DATA = {
         { label: 'Oct', value: 11.5 }, { label: 'Nov', value: 8.0 }, { label: 'Dec', value: 5.8 },
       ],
       type: 'area',
-      color: '#0EA5E9',
     },
-    chart2: {
-      title: 'Monthly Rainfall (mm)',
+    {
+      title: 'Average Monthly Rainfall (mm)',
       data: [
         { label: 'Jan', value: 8 }, { label: 'Feb', value: 12 }, { label: 'Mar', value: 35 },
         { label: 'Apr', value: 78 }, { label: 'May', value: 142 }, { label: 'Jun', value: 168 },
@@ -159,18 +67,11 @@ const TOPIC_DATA = {
         { label: 'Oct', value: 172 }, { label: 'Nov', value: 68 }, { label: 'Dec', value: 22 },
       ],
       type: 'bar',
-      color: '#0EA5E9',
     },
-  },
-  'urban-mobility': {
-    indicators: [
-      { label: 'Daily Incidents (PP)', value: '47', unit: '', change: -4.1, source: 'MPWT' },
-      { label: 'Bus Ridership/Day', value: '17,200', unit: '', change: +7.5, source: 'MPWT' },
-      { label: 'Registered Vehicles', value: '3.6M', unit: '', change: +8.2, source: 'MPWT' },
-      { label: 'Road Length', value: '62,000 km', unit: '', change: +2.1, source: 'MPWT' },
-    ],
-    chart1: {
-      title: 'Daily Traffic Incidents (Phnom Penh)',
+  ],
+  'urban-mobility': [
+    {
+      title: 'Daily Traffic Incidents — Phnom Penh (est. 2024)',
       data: [
         { label: 'Jan', value: 52 }, { label: 'Feb', value: 48 }, { label: 'Mar', value: 55 },
         { label: 'Apr', value: 41 }, { label: 'May', value: 38 }, { label: 'Jun', value: 45 },
@@ -178,10 +79,9 @@ const TOPIC_DATA = {
         { label: 'Oct', value: 47 }, { label: 'Nov', value: 44 }, { label: 'Dec', value: 48 },
       ],
       type: 'bar',
-      color: '#EC4899',
     },
-    chart2: {
-      title: 'Public Bus Ridership (daily avg)',
+    {
+      title: 'Public Bus Ridership — Daily Average (est. 2024)',
       data: [
         { label: 'Jan', value: 12000 }, { label: 'Feb', value: 11500 }, { label: 'Mar', value: 13200 },
         { label: 'Apr', value: 12800 }, { label: 'May', value: 14500 }, { label: 'Jun', value: 15200 },
@@ -189,35 +89,77 @@ const TOPIC_DATA = {
         { label: 'Oct', value: 17200 }, { label: 'Nov', value: 16800 }, { label: 'Dec', value: 18000 },
       ],
       type: 'line',
-      color: '#EC4899',
     },
-  },
-};
-
-const CLUSTER_DATASETS = {
-  finance: [
-    { id: 'usd-exchange-rate', title: 'USD/KHR Daily Exchange Rate', description: 'Official exchange rates from NBC.', ministry: MINISTRIES.nbc, lastUpdated: new Date().toISOString(), hasGeospatial: false, category: 'Financial Markets', sparklineData: [4100,4095,4102,4098,4105,4110,4108,4115,4112,4120], downloadCount: 12450 },
-    { id: 'csx-index', title: 'CSX Stock Market Index', description: 'Daily CSX index and trading data.', ministry: MINISTRIES.nbc, lastUpdated: new Date().toISOString(), hasGeospatial: false, category: 'Financial Markets', sparklineData: [560,555,572,568,580,575,590,585,595,602], downloadCount: 6540 },
-    { id: 'microfinance', title: 'Microfinance Loan Disbursements', description: 'Monthly microfinance stats by province.', ministry: MINISTRIES.nbc, lastUpdated: new Date(Date.now()-15*864e5).toISOString(), hasGeospatial: true, category: 'Financial Markets', sparklineData: [250,280,265,310,340,325,380,410,395,450], downloadCount: 2340 },
   ],
 };
 
-function ChartBlock({ chart, color }) {
-  const { title, data, type } = chart;
+// World Bank config per cluster
+const WB_CONFIG = {
+  finance: {
+    indicators: [
+      { code: INDICATORS.GDP_GROWTH, label: 'GDP Growth', format: v => `${v.toFixed(1)}%` },
+      { code: INDICATORS.GDP_PER_CAPITA, label: 'GDP per Capita', format: v => `$${Math.round(v).toLocaleString()}` },
+      { code: INDICATORS.INFLATION, label: 'Inflation Rate', format: v => `${v.toFixed(1)}%` },
+    ],
+    charts: [
+      { code: INDICATORS.GDP_GROWTH, title: 'GDP Growth Rate (annual %)', type: 'area', yFormat: v => `${v.toFixed(1)}%` },
+      { code: INDICATORS.GDP_PER_CAPITA, title: 'GDP per Capita (current USD)', type: 'line', yFormat: v => `$${Math.round(v).toLocaleString()}` },
+    ],
+  },
+  agriculture: {
+    indicators: [
+      { code: INDICATORS.AGRICULTURE_GDP, label: 'Agriculture % of GDP', format: v => `${v.toFixed(1)}%` },
+      { code: INDICATORS.FOREST_AREA, label: 'Forest Cover', format: v => `${v.toFixed(1)}%` },
+    ],
+    charts: [
+      { code: INDICATORS.AGRICULTURE_GDP, title: 'Agriculture, Forestry & Fishing (% of GDP)', type: 'bar', yFormat: v => `${v.toFixed(1)}%` },
+      { code: INDICATORS.FOREST_AREA, title: 'Forest Area (% of land area)', type: 'area', yFormat: v => `${v.toFixed(1)}%` },
+    ],
+  },
+  tourism: {
+    indicators: [
+      { code: INDICATORS.TOURIST_ARRIVALS, label: "Int'l Arrivals", format: v => v >= 1e6 ? `${(v / 1e6).toFixed(2)}M` : `${(v / 1e3).toFixed(0)}K` },
+    ],
+    charts: [
+      {
+        code: INDICATORS.TOURIST_ARRIVALS, title: 'International Tourist Arrivals', type: 'area',
+        transform: v => v / 1e6, yFormat: v => `${v.toFixed(2)}M`,
+      },
+    ],
+  },
+  garment: {
+    indicators: [
+      { code: INDICATORS.EXPORTS_GDP, label: 'Exports (% of GDP)', format: v => `${v.toFixed(1)}%` },
+    ],
+    charts: [
+      { code: INDICATORS.EXPORTS_GDP, title: 'Exports of Goods & Services (% of GDP)', type: 'line', yFormat: v => `${v.toFixed(1)}%` },
+    ],
+  },
+};
+
+function ChartBlock({ title, data, type, color, yFormat }) {
+  if (!data || data.length === 0) {
+    return (
+      <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-xl)', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 220 }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No data available for this chart</p>
+      </div>
+    );
+  }
+
   const ChartComponent = type === 'bar' ? BarChart : type === 'area' ? AreaChart : LineChart;
-  const DataComponent = type === 'bar' ? Bar : type === 'area' ? Area : Line;
 
   return (
     <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-xl)', padding: '20px' }}>
       <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>{title}</p>
       <ResponsiveContainer width="100%" height={220}>
-        <ChartComponent data={data}>
+        <ChartComponent data={data} margin={{ top: 5, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={45} />
+          <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+          <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={52} tickFormatter={yFormat || (v => v.toLocaleString())} />
           <Tooltip
             contentStyle={{ background: 'var(--bg-primary)', border: '1px solid var(--border-light)', borderRadius: 8, fontSize: 13 }}
             cursor={{ fill: `${color}18` }}
+            formatter={(v) => [yFormat ? yFormat(v) : v.toLocaleString(), '']}
           />
           {type === 'area' ? (
             <Area type="monotone" dataKey="value" stroke={color} fill={`${color}20`} strokeWidth={2} dot={false} />
@@ -232,11 +174,60 @@ function ChartBlock({ chart, color }) {
   );
 }
 
+function IndicatorCard({ label, value, change, source, note }) {
+  return (
+    <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-xl)', padding: '20px' }}>
+      <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>{label}</p>
+      <p style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px', lineHeight: 1 }}>{value}</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {change != null ? (
+          <span style={{
+            display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600,
+            color: change > 0 ? 'var(--success)' : change < 0 ? 'var(--error)' : 'var(--text-muted)'
+          }}>
+            {change > 0 ? <TrendingUp size={13} /> : change < 0 ? <TrendingDown size={13} /> : null}
+            {change > 0 ? '+' : ''}{change.toFixed(1)}%
+          </span>
+        ) : <span />}
+        <span style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'right' }}>
+          {source}{note ? ` · ${note}` : ''}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const CLUSTER_DATASETS = {
+  finance: [
+    { id: 'usd-exchange-rate', title: 'USD/KHR Daily Exchange Rate', description: 'Official daily exchange rates from the National Bank of Cambodia.', ministry: MINISTRIES.nbc, lastUpdated: new Date().toISOString(), hasGeospatial: false, category: 'Financial Markets', sparklineData: [4100, 4095, 4102, 4098, 4105, 4110, 4108, 4115, 4112, 4120], downloadCount: 12450 },
+    { id: 'csx-index', title: 'CSX Stock Market Index', description: 'Daily Cambodia Securities Exchange index and trading data.', ministry: MINISTRIES.nbc, lastUpdated: new Date().toISOString(), hasGeospatial: false, category: 'Financial Markets', sparklineData: [560, 555, 572, 568, 580, 575, 590, 585, 595, 602], downloadCount: 6540 },
+    { id: 'microfinance', title: 'Microfinance Loan Disbursements', description: 'Monthly microfinance stats by province.', ministry: MINISTRIES.nbc, lastUpdated: new Date(Date.now() - 15 * 864e5).toISOString(), hasGeospatial: true, category: 'Financial Markets', sparklineData: [250, 280, 265, 310, 340, 325, 380, 410, 395, 450], downloadCount: 2340 },
+  ],
+};
+
 export default function TopicDashboardPage() {
   const { slug } = useParams();
   const cluster = DATA_CLUSTERS.find(c => c.id === slug);
-  const topicData = TOPIC_DATA[slug];
+  const wbConfig = WB_CONFIG[slug];
   const datasets = CLUSTER_DATASETS[slug] || [];
+
+  const [wbData, setWbData] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!wbConfig) return;
+    setLoading(true);
+    setWbData({});
+
+    const codes = [...new Set([
+      ...wbConfig.indicators.map(i => i.code),
+      ...wbConfig.charts.map(c => c.code),
+    ])];
+
+    fetchIndicators(codes, { startYear: 2010, endYear: 2024 })
+      .then(data => { setWbData(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [slug]);
 
   if (!cluster) {
     return (
@@ -248,22 +239,48 @@ export default function TopicDashboardPage() {
   }
 
   const Icon = LucideIcons[cluster.icon] || LucideIcons.Database;
+  const staticCards = STATIC_CARDS[slug] || [];
+
+  // Build WB indicator cards
+  const wbCards = wbConfig ? wbConfig.indicators.map(ind => {
+    const series = wbData[ind.code] || [];
+    if (!series.length) return null;
+    const latest = series[series.length - 1];
+    const prev = series[series.length - 2];
+    const change = prev && prev.value ? ((latest.value - prev.value) / Math.abs(prev.value)) * 100 : null;
+    return { label: ind.label, value: ind.format(latest.value), change, source: 'World Bank', note: String(latest.year) };
+  }).filter(Boolean) : [];
+
+  // Build chart data from WB series
+  const buildChartData = (chartCfg) => {
+    const series = wbData[chartCfg.code] || [];
+    return series.map(d => ({
+      label: String(d.year),
+      value: chartCfg.transform ? chartCfg.transform(d.value) : d.value,
+    }));
+  };
+
+  const hasWbCharts = wbConfig && wbConfig.charts.some(c => (wbData[c.code] || []).length > 0);
+  const staticCharts = STATIC_CHARTS[slug] || [];
+  const showStaticCharts = !wbConfig || (!loading && !hasWbCharts);
+
+  const allCards = [...wbCards, ...staticCards];
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
       <Helmet>
         <title>{cluster.name} — CamData Topics</title>
-        <meta name="description" content={`${cluster.description}. Explore datasets and visualizations.`} />
+        <meta name="description" content={`${cluster.description}. Real data from the World Bank and official Cambodian sources.`} />
       </Helmet>
 
       {/* Header */}
       <div style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-light)', padding: '32px 24px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <Link to="/topics" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+          <Link to="/topics" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px', textDecoration: 'none' }}>
             <ArrowLeft size={15} /> All Topics
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ width: 64, height: 64, borderRadius: 'var(--radius-xl)', background: `${cluster.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 64, height: 64, borderRadius: 'var(--radius-xl)', background: `${cluster.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Icon size={32} color={cluster.color} />
             </div>
             <div>
@@ -275,46 +292,80 @@ export default function TopicDashboardPage() {
       </div>
 
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px' }}>
-        {topicData ? (
-          <>
-            {/* Key Indicators */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <RomduolIconOutline size={16} color="var(--accent-primary)" />
-              <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>Key Indicators</h2>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px', marginBottom: '40px' }}>
-              {topicData.indicators.map((ind, i) => (
-                <div key={i} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-xl)', padding: '20px' }}>
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>{ind.label}</p>
-                  <p style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px', lineHeight: 1 }}>{ind.value}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{
-                      display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600,
-                      color: ind.change > 0 ? 'var(--success)' : ind.change < 0 ? 'var(--error)' : 'var(--text-muted)'
-                    }}>
-                      {ind.change > 0 ? <TrendingUp size={13} /> : ind.change < 0 ? <TrendingDown size={13} /> : null}
-                      {ind.change > 0 ? '+' : ''}{ind.change}%
-                    </span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{ind.source}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
 
-            {/* Charts */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <RomduolIconOutline size={16} color="var(--accent-primary)" />
-              <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>Charts</h2>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '20px', marginBottom: '48px' }}>
-              <ChartBlock chart={topicData.chart1} color={cluster.color} />
-              <ChartBlock chart={topicData.chart2} color={cluster.color} />
-            </div>
-          </>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '40px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-light)', marginBottom: '40px' }}>
-            <p style={{ color: 'var(--text-muted)' }}>Dashboard data for this topic is coming soon.</p>
+        {/* Key Indicators */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+          <RomduolIconOutline size={16} color="var(--accent-primary)" />
+          <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>Key Indicators</h2>
+        </div>
+
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '24px 0', color: 'var(--text-muted)', marginBottom: 40 }}>
+            <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+            <span style={{ fontSize: 14 }}>Loading World Bank data…</span>
           </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px', marginBottom: '40px' }}>
+            {allCards.map((card, i) => (
+              <IndicatorCard key={i} {...card} />
+            ))}
+          </div>
+        )}
+
+        {/* Charts */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+          <RomduolIconOutline size={16} color="var(--accent-primary)" />
+          <h2 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>Charts</h2>
+        </div>
+
+        {wbConfig && loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '24px 0', color: 'var(--text-muted)', marginBottom: 40 }}>
+            <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+            <span style={{ fontSize: 14 }}>Fetching time series data…</span>
+          </div>
+        ) : (
+          <>
+            {/* World Bank charts */}
+            {wbConfig && hasWbCharts && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: '20px', marginBottom: wbConfig.charts.length > 0 ? '12px' : '40px' }}>
+                {wbConfig.charts.map((chartCfg, i) => (
+                  <ChartBlock
+                    key={i}
+                    title={chartCfg.title}
+                    data={buildChartData(chartCfg)}
+                    type={chartCfg.type}
+                    color={cluster.color}
+                    yFormat={chartCfg.yFormat}
+                  />
+                ))}
+              </div>
+            )}
+            {wbConfig && hasWbCharts && (
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 40 }}>
+                Source: World Bank Open Data · Cambodia (KHM) · 2010–2024
+              </p>
+            )}
+
+            {/* Static charts for clusters without WB data */}
+            {showStaticCharts && staticCharts.length > 0 && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: '20px', marginBottom: '12px' }}>
+                  {staticCharts.map((chart, i) => (
+                    <ChartBlock
+                      key={i}
+                      title={chart.title}
+                      data={chart.data}
+                      type={chart.type}
+                      color={cluster.color}
+                    />
+                  ))}
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 40 }}>
+                  Note: Charts show estimated or historical seasonal averages pending official open data publication.
+                </p>
+              </>
+            )}
+          </>
         )}
 
         {/* Datasets */}
@@ -335,7 +386,7 @@ export default function TopicDashboardPage() {
         ) : (
           <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-xl)', padding: '32px', textAlign: 'center' }}>
             <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Explore all datasets for this topic</p>
-            <Link to={`/cluster/${slug}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--accent-text)', fontWeight: 600, fontSize: '14px' }}>
+            <Link to={`/datasets?topic=${slug}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--accent-text)', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
               Browse {cluster.name} datasets <ArrowRight size={15} />
             </Link>
           </div>
@@ -343,8 +394,9 @@ export default function TopicDashboardPage() {
       </div>
 
       <style>{`
-        @media (max-width: 768px) {
-          div[style*="minmax(480px"] { grid-template-columns: 1fr !important; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @media (max-width: 900px) {
+          div[style*="minmax(440px"] { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>

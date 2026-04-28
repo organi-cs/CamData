@@ -1,48 +1,37 @@
-# 🇰🇭 CamData
+# CamData 🇰🇭
 
-Cambodia's open data portal. Explore government data — exchange rates, air quality, provinces, and more.
+I built this because Cambodia's government data exists but is scattered across a dozen ministry websites with no central place to explore it. CamData pulls it together.
 
-**Live:** [camdata.vercel.app](https://camdata.vercel.app) *(coming soon)*
+**Live site:** [camdata-gamma.vercel.app](https://camdata-gamma.vercel.app)
 
-## Features
+## What's in it
 
-- **Exchange Rates** — Real-time KHR rates from National Bank of Cambodia, currency converter, CSV export
-- **Air Quality** — AQI data across provinces with color-coded indicators
-- **Stock Market** — CSX trading data for listed companies
-- **Provinces** — All 25 provinces with Khmer names (interactive map coming soon)
+- **Exchange Rates** — Daily KHR rates from the National Bank of Cambodia. Includes a currency converter and CSV export.
+- **Air Quality** — AQI readings across Cambodian provinces, color-coded so you know at a glance whether the air is good or bad.
+- **Stock Market** — Trading data from the Cambodia Securities Exchange (CSX).
+- **Provinces** — All 25 provinces with Khmer names, population figures, and an interactive map.
+- **Topic Dashboards** — World Bank indicators for Cambodia (GDP growth, agriculture, tourism, and more) with real time series charts.
 
-## Tech Stack
+## Tech
 
-- React 18
-- Recharts (visualizations)
-- Leaflet (maps)
-- Lucide Icons
+React 18 · Recharts · Leaflet · Lucide Icons · Supabase (caching) · Vercel
 
-## Data Sources
+## Data sources
 
 - [data.mef.gov.kh](https://data.mef.gov.kh) — Ministry of Economy and Finance
-- [Open Development Cambodia](https://opendevelopmentcambodia.net)
 - [National Bank of Cambodia](https://www.nbc.gov.kh)
 - [Cambodia Securities Exchange](https://csx.com.kh)
+- [World Bank Open Data](https://data.worldbank.org) — Cambodia (KHM)
+- [WAQI](https://waqi.info) — Air quality
 
-## Run Locally
+## Run it locally
 
 ```bash
+cp .env.local.example .env.local  # add your API keys
 npm install
 npm start
 ```
 
-## Deploy to Vercel
-
-```bash
-npm run build
-# Deploy build folder to Vercel
-```
-
 ## Author
 
-**Samputhy Khim** — [@organi-cs](https://github.com/organi-cs)
-
----
-
-*Built for Cambodia 🇰🇭*
+Samputhy Khim · [github.com/organi-cs](https://github.com/organi-cs)

@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
-import { Check, Copy, ExternalLink, Code2, Zap, Shield } from 'lucide-react';
+import { Check, Copy, ExternalLink, Code2, Zap, Shield, Database } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { RomduolIcon, RomduolIconOutline } from '../components/ui/RomduolIcon';
 import '../styles/design-tokens.css';
 
+const CAMDATA_BASE_URL = 'https://camdata.vercel.app';
+const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || 'https://your-project.supabase.co';
+
 const ENDPOINTS = [
   {
-    id: 'exchange',
+    id: 'exchange-proxy',
     method: 'GET',
     path: '/api/mef/realtime-api/exchange-rate',
-    title: 'Exchange Rates',
-    desc: 'Real-time KHR exchange rates for 30+ currencies, sourced from the National Bank of Cambodia.',
-    source: 'MEF → NBC',
+    baseUrl: CAMDATA_BASE_URL,
+    title: 'Exchange Rates Proxy',
+    desc: 'Current exchange rate snapshot proxied through CamData.',
+    source: 'MEF -> NBC',
+    auth: 'No auth required',
     example: `{
   "status": "ok",
   "data": [
@@ -21,110 +26,118 @@ const ENDPOINTS = [
       "buy": 4110,
       "sell": 4130,
       "average": 4120
-    },
-    ...
+    }
   ]
 }`,
   },
   {
-    id: 'csx',
+    id: 'datasets-rest',
     method: 'GET',
-    path: '/api/mef/realtime-api/csx-index',
-    title: 'CSX Index',
-    desc: 'Cambodia Securities Exchange market index with daily open, high, low, close, and volume.',
-    source: 'MEF → CSX',
-    example: `{
-  "status": "ok",
-  "data": {
-    "value": 481.25,
-    "change": 2.15,
-    "change_percent": 0.45,
-    "volume": 125400,
-    "date": "2026-04-28"
+    path: '/rest/v1/mef_datasets?select=*&order=title.asc',
+    baseUrl: SUPABASE_URL,
+    title: 'Dataset Catalog (Supabase)',
+    desc: 'Curated dataset metadata served directly from the mef_datasets table.',
+    source: 'Supabase PostgREST',
+    auth: 'Anon key required',
+    example: `[
+  {
+    "id": "usd-exchange-rate",
+    "title": "USD/KHR Daily Exchange Rate",
+    "cluster_id": "finance",
+    "formats": ["CSV"],
+    "last_updated": "2026-04-28"
   }
-}`,
+]`,
   },
   {
-    id: 'csx-trade',
+    id: 'exchange-rest',
     method: 'GET',
-    path: '/api/mef/realtime-api/csx-trade-summary',
-    title: 'CSX Trade Summary',
-    desc: 'Daily trade summary for all listed companies: price, change, volume.',
-    source: 'MEF → CSX',
-    example: `{
-  "status": "ok",
-  "data": [
-    {
-      "symbol": "PWSA",
-      "price": 6200,
-      "change": 50,
-      "change_percent": 0.81,
-      "volume": 12500
-    },
-    ...
-  ]
-}`,
+    path: '/rest/v1/exchange_rates?currency_id=eq.USD&order=date.desc&limit=30',
+    baseUrl: SUPABASE_URL,
+    title: 'Exchange Rate History (Supabase)',
+    desc: 'Historical daily exchange rate snapshots for charting and analytics.',
+    source: 'Supabase PostgREST',
+    auth: 'Anon key required',
+    example: `[
+  {
+    "date": "2026-04-28",
+    "currency_id": "USD",
+    "average": 4120,
+    "bid": 4110,
+    "ask": 4130
+  }
+]`,
   },
   {
-    id: 'aqi',
+    id: 'air-quality-rest',
     method: 'GET',
-    path: '/api/waqi/feed/phnom-penh/?token=YOUR_TOKEN',
-    title: 'Air Quality (Phnom Penh)',
-    desc: 'Real-time AQI and pollutant data (PM2.5, PM10, O3, NO2, SO2, CO) from WAQI.',
-    source: 'WAQI',
-    example: `{
-  "status": "ok",
-  "data": {
+    path: '/rest/v1/air_quality_readings?station_id=eq.phnom-penh&order=recorded_at.desc&limit=12',
+    baseUrl: SUPABASE_URL,
+    title: 'Air Quality History (Supabase)',
+    desc: 'Station snapshots ingested from WAQI and stored in air_quality_readings.',
+    source: 'Supabase PostgREST',
+    auth: 'Anon key required',
+    example: `[
+  {
+    "station_id": "phnom-penh",
+    "station_name": "Phnom Penh",
     "aqi": 68,
-    "dominentpol": "pm25",
-    "iaqi": {
-      "pm25": { "v": 18.5 },
-      "pm10": { "v": 32.0 },
-      "t": { "v": 29 },
-      "h": { "v": 72 }
-    },
-    "time": { "s": "2026-04-28 09:00:00" }
+    "pm25": 18.5,
+    "recorded_at": "2026-04-28T09:00:00Z"
   }
-}`,
-  },
-  {
-    id: 'datasets',
-    method: 'GET',
-    path: '/api/mef/public-datasets?page=1&page_size=20',
-    title: 'Dataset Catalog',
-    desc: 'List all public datasets from the MEF open data platform with pagination.',
-    source: 'MEF',
-    example: `{
-  "total": 120,
-  "page": 1,
-  "page_size": 20,
-  "data": [
-    {
-      "id": "pd_66a8603700604c000123e144",
-      "title": "Province Population Data",
-      "updated_at": "2025-12-15",
-      "formats": ["csv", "json"]
-    },
-    ...
-  ]
-}`,
+]`,
   },
 ];
 
-const CODE_EXAMPLES = {
-  js: (path) => `// JavaScript (Fetch API)
-const response = await fetch('https://camdata.vercel.app${path}');
-const data = await response.json();
-console.log(data);`,
-  python: (path) => `# Python (requests)
+function buildExampleUrl(endpoint) {
+  return `${endpoint.baseUrl}${endpoint.path}`;
+}
+
+function buildCodeExample(language, endpoint) {
+  const url = buildExampleUrl(endpoint);
+  const needsAnonKey = endpoint.baseUrl === SUPABASE_URL;
+
+  if (language === 'python') {
+    return needsAnonKey
+      ? `import os
 import requests
 
-resp = requests.get('https://camdata.vercel.app${path}')
-data = resp.json()
-print(data)`,
-  curl: (path) => `# cURL
-curl -s 'https://camdata.vercel.app${path}' | python -m json.tool`,
-};
+url = "${url}"
+headers = {
+    "apikey": os.environ["SUPABASE_ANON_KEY"],
+    "Authorization": f"Bearer {os.environ['SUPABASE_ANON_KEY']}",
+}
+
+resp = requests.get(url, headers=headers)
+print(resp.json())`
+      : `import requests
+
+resp = requests.get("${url}")
+print(resp.json())`;
+  }
+
+  if (language === 'curl') {
+    return needsAnonKey
+      ? `curl "${url}" \\
+  -H "apikey: $SUPABASE_ANON_KEY" \\
+  -H "Authorization: Bearer $SUPABASE_ANON_KEY"`
+      : `curl "${url}"`;
+  }
+
+  return needsAnonKey
+    ? `const response = await fetch("${url}", {
+  headers: {
+    apikey: process.env.REACT_APP_SUPABASE_ANON_KEY,
+    Authorization: \`Bearer \${process.env.REACT_APP_SUPABASE_ANON_KEY}\`,
+  },
+});
+
+const data = await response.json();
+console.log(data);`
+    : `const response = await fetch("${url}");
+const data = await response.json();
+console.log(data);`;
+}
 
 function CodeBlock({ code }) {
   const [copied, setCopied] = useState(false);
@@ -136,22 +149,47 @@ function CodeBlock({ code }) {
   };
 
   return (
-    <div style={{ position: 'relative', background: 'var(--bg-dark, #0f172a)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+    <div
+      style={{
+        position: 'relative',
+        background: 'var(--bg-dark, #0f172a)',
+        borderRadius: 'var(--radius-lg)',
+        overflow: 'hidden',
+      }}
+    >
       <button
         onClick={handleCopy}
         style={{
-          position: 'absolute', top: 12, right: 12,
-          display: 'flex', alignItems: 'center', gap: '5px',
-          padding: '5px 10px', fontSize: '12px', fontWeight: 500,
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 5,
+          padding: '5px 10px',
+          fontSize: '12px',
+          fontWeight: 500,
           background: copied ? 'var(--success)' : 'rgba(255,255,255,0.1)',
-          color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-          transition: 'all 0.15s',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 'var(--radius-md)',
+          cursor: 'pointer',
         }}
       >
         {copied ? <Check size={13} /> : <Copy size={13} />}
         {copied ? 'Copied!' : 'Copy'}
       </button>
-      <pre style={{ margin: 0, padding: '20px', overflowX: 'auto', fontSize: '13px', lineHeight: 1.6, color: '#e2e8f0', fontFamily: 'JetBrains Mono, Fira Code, monospace' }}>
+      <pre
+        style={{
+          margin: 0,
+          padding: 20,
+          overflowX: 'auto',
+          fontSize: '13px',
+          lineHeight: 1.6,
+          color: '#e2e8f0',
+          fontFamily: 'JetBrains Mono, Fira Code, monospace',
+        }}
+      >
         <code>{code}</code>
       </pre>
     </div>
@@ -162,35 +200,66 @@ export default function DevelopersPage() {
   const [activeEndpoint, setActiveEndpoint] = useState(ENDPOINTS[0].id);
   const [activeLang, setActiveLang] = useState('js');
 
-  const endpoint = ENDPOINTS.find(e => e.id === activeEndpoint) || ENDPOINTS[0];
+  const endpoint = ENDPOINTS.find((entry) => entry.id === activeEndpoint) || ENDPOINTS[0];
 
   return (
     <div style={{ background: 'var(--bg-primary)', minHeight: '100vh' }}>
       <Helmet>
-        <title>Developers — CamData API</title>
-        <meta name="description" content="CamData API documentation. Access Cambodia's open data programmatically: exchange rates, air quality, CSX market data, and more." />
+        <title>Developers - CamData API</title>
+        <meta
+          name="description"
+          content="CamData developer documentation for proxy endpoints and Supabase REST tables including exchange_rates, air_quality_readings, and mef_datasets."
+        />
       </Helmet>
 
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, var(--bg-dark, #0f172a) 0%, #1e3a5f 100%)', color: '#fff', padding: '64px 24px' }}>
+      <div
+        style={{
+          background: 'linear-gradient(135deg, var(--bg-dark, #0f172a) 0%, #1e3a5f 100%)',
+          color: '#fff',
+          padding: '64px 24px',
+        }}
+      >
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             <RomduolIcon size={32} color="var(--accent-primary, #FFCC33)" />
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--accent-primary, #FFCC33)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Developer API</span>
+            <span
+              style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--accent-primary, #FFCC33)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              Developer API
+            </span>
           </div>
-          <h1 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, marginBottom: '16px', lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, marginBottom: 16 }}>
             CamData API Reference
           </h1>
-          <p style={{ fontSize: '18px', color: '#94a3b8', maxWidth: 560, marginBottom: '32px' }}>
-            Access all of Cambodia's open data endpoints programmatically. No authentication required for most endpoints.
+          <p style={{ fontSize: '18px', color: '#94a3b8', maxWidth: 620, marginBottom: 32 }}>
+            Proxy endpoints are still available, and Supabase now exposes read-only REST tables for
+            historical exchange rates, stored air quality readings, and the dataset catalog.
           </p>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {[
-              { icon: Zap, label: 'No API Key Required', sub: 'for most endpoints' },
-              { icon: Shield, label: 'Rate Limit: 1,000 req/hr', sub: 'per IP address' },
-              { icon: Code2, label: 'JSON + GeoJSON', sub: 'response formats' },
+              { icon: Zap, label: 'Proxy + PostgREST', sub: 'choose live or stored data' },
+              { icon: Shield, label: 'RLS-protected tables', sub: 'anon key for public reads' },
+              { icon: Database, label: 'Historical snapshots', sub: 'exchange + air quality' },
+              { icon: Code2, label: 'JSON-first', sub: 'simple browser and server access' },
             ].map(({ icon: Icon, label, sub }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: 'rgba(255,255,255,0.07)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div
+                key={label}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '12px 16px',
+                  background: 'rgba(255,255,255,0.07)',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}
+              >
                 <Icon size={18} color="var(--accent-primary, #FFCC33)" />
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: 600 }}>{label}</div>
@@ -202,83 +271,172 @@ export default function DevelopersPage() {
         </div>
       </div>
 
-      {/* API Explorer */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '32px' }}>
-          {/* Sidebar */}
+        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 32 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <RomduolIconOutline size={16} color="var(--accent-primary)" />
-              <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>Endpoints</p>
+              <p
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  margin: 0,
+                }}
+              >
+                Endpoints
+              </p>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {ENDPOINTS.map(ep => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {ENDPOINTS.map((entry) => (
                 <button
-                  key={ep.id}
-                  onClick={() => setActiveEndpoint(ep.id)}
+                  key={entry.id}
+                  onClick={() => setActiveEndpoint(entry.id)}
                   style={{
                     textAlign: 'left',
                     padding: '12px 14px',
-                    background: activeEndpoint === ep.id ? 'var(--accent-light)' : 'transparent',
-                    color: activeEndpoint === ep.id ? 'var(--accent-text)' : 'var(--text-secondary)',
-                    border: `1px solid ${activeEndpoint === ep.id ? 'var(--accent-primary)' : 'transparent'}`,
+                    background: activeEndpoint === entry.id ? 'var(--accent-light)' : 'transparent',
+                    color: activeEndpoint === entry.id ? 'var(--accent-text)' : 'var(--text-secondary)',
+                    border: `1px solid ${activeEndpoint === entry.id ? 'var(--accent-primary)' : 'transparent'}`,
                     borderRadius: 'var(--radius-md)',
                     cursor: 'pointer',
                     fontSize: '14px',
-                    fontWeight: activeEndpoint === ep.id ? 600 : 500,
-                    transition: 'all 0.15s',
+                    fontWeight: activeEndpoint === entry.id ? 600 : 500,
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{
-                      fontSize: '10px', fontWeight: 700, padding: '2px 6px',
-                      background: 'var(--success-bg)', color: 'var(--success)',
-                      borderRadius: 'var(--radius-sm)', letterSpacing: '0.5px',
-                    }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        background: 'var(--success-bg)',
+                        color: 'var(--success)',
+                        borderRadius: 'var(--radius-sm)',
+                      }}
+                    >
                       GET
                     </span>
-                    {ep.title}
+                    {entry.title}
                   </div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Content */}
           <div>
-            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-xl)', padding: '28px', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
+            <div
+              style={{
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-light)',
+                borderRadius: 'var(--radius-xl)',
+                padding: 28,
+                marginBottom: 24,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 16,
+                  marginBottom: 16,
+                }}
+              >
                 <div>
-                  <h2 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>{endpoint.title}</h2>
-                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>{endpoint.desc}</p>
+                  <h2 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>
+                    {endpoint.title}
+                  </h2>
+                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>
+                    {endpoint.desc}
+                  </p>
                 </div>
-                <span style={{ fontSize: '12px', padding: '4px 10px', background: 'var(--accent-light)', color: 'var(--accent-text)', borderRadius: 'var(--radius-full)', fontWeight: 500, flexShrink: 0 }}>
-                  Source: {endpoint.source}
+                <span
+                  style={{
+                    fontSize: '12px',
+                    padding: '4px 10px',
+                    background: 'var(--accent-light)',
+                    color: 'var(--accent-text)',
+                    borderRadius: 'var(--radius-full)',
+                    fontWeight: 500,
+                    flexShrink: 0,
+                  }}
+                >
+                  {endpoint.source}
                 </span>
               </div>
 
-              {/* Endpoint URL */}
-              <div style={{ background: 'var(--bg-dark, #0f172a)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--success)', background: 'var(--success-bg)', padding: '3px 8px', borderRadius: 'var(--radius-sm)', flexShrink: 0 }}>GET</span>
-                <code style={{ fontSize: '13px', color: '#e2e8f0', fontFamily: 'JetBrains Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {endpoint.path}
+              <div
+                style={{
+                  background: 'var(--bg-dark, #0f172a)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '14px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  marginBottom: 14,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    color: 'var(--success)',
+                    background: 'var(--success-bg)',
+                    padding: '3px 8px',
+                    borderRadius: 'var(--radius-sm)',
+                    flexShrink: 0,
+                  }}
+                >
+                  GET
+                </span>
+                <code
+                  style={{
+                    fontSize: '13px',
+                    color: '#e2e8f0',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {buildExampleUrl(endpoint)}
                 </code>
               </div>
+
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                Auth: <strong>{endpoint.auth}</strong>
+              </p>
             </div>
 
-            {/* Code examples */}
-            <div style={{ marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <RomduolIconOutline size={16} color="var(--accent-primary)" />
-                <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>Code Examples</p>
+                <p
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: 'var(--text-muted)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    margin: 0,
+                  }}
+                >
+                  Code Examples
+                </p>
               </div>
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
                 {[{ id: 'js', label: 'JavaScript' }, { id: 'python', label: 'Python' }, { id: 'curl', label: 'cURL' }].map(({ id, label }) => (
                   <button
                     key={id}
                     onClick={() => setActiveLang(id)}
                     style={{
-                      padding: '7px 14px', fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+                      padding: '7px 14px',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
                       background: activeLang === id ? 'var(--accent-primary)' : 'var(--bg-secondary)',
                       color: activeLang === id ? 'var(--accent-text)' : 'var(--text-secondary)',
                       border: `1px solid ${activeLang === id ? 'var(--accent-primary)' : 'var(--border-light)'}`,
@@ -289,51 +447,74 @@ export default function DevelopersPage() {
                   </button>
                 ))}
               </div>
-              <CodeBlock code={CODE_EXAMPLES[activeLang](endpoint.path)} />
+              <CodeBlock code={buildCodeExample(activeLang, endpoint)} />
             </div>
 
-            {/* Example Response */}
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <RomduolIconOutline size={16} color="var(--accent-primary)" />
-                <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>Example Response</p>
+                <p
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: 'var(--text-muted)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    margin: 0,
+                  }}
+                >
+                  Example Response
+                </p>
               </div>
               <CodeBlock code={endpoint.example} />
             </div>
           </div>
         </div>
 
-        {/* Rate limits & notes */}
-        <div style={{ marginTop: '48px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-          <div style={{ background: 'var(--info-bg)', border: '1px solid var(--info)', borderRadius: 'var(--radius-xl)', padding: '20px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--info)', marginBottom: '8px' }}>WAQI API Key</h3>
+        <div
+          style={{
+            marginTop: 48,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: 16,
+          }}
+        >
+          <div style={{ background: 'var(--info-bg)', border: '1px solid var(--info)', borderRadius: 'var(--radius-xl)', padding: 20 }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--info)', marginBottom: 8 }}>
+              Supabase Headers
+            </h3>
             <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>
-              Air quality endpoints require a free WAQI token. Get yours at{' '}
-              <a href="https://aqicn.org/data-platform/token/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--info)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                aqicn.org <ExternalLink size={12} />
-              </a>
+              PostgREST reads need the project anon key in both the <code>apikey</code> and
+              <code> Authorization</code> headers.
             </p>
           </div>
-          <div style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning)', borderRadius: 'var(--radius-xl)', padding: '20px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--warning)', marginBottom: '8px' }}>Rate Limits</h3>
+          <div style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning)', borderRadius: 'var(--radius-xl)', padding: 20 }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--warning)', marginBottom: 8 }}>
+              Historical Data Freshness
+            </h3>
             <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>
-              Please limit requests to 1,000/hr per IP. For higher volume access, use the source APIs directly.
+              Exchange rates and air quality history depend on scheduled Supabase Edge Functions being deployed and enabled.
             </p>
           </div>
-          <div style={{ background: 'var(--success-bg)', border: '1px solid var(--success)', borderRadius: 'var(--radius-xl)', padding: '20px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--success)', marginBottom: '8px' }}>Data License</h3>
+          <div style={{ background: 'var(--success-bg)', border: '1px solid var(--success)', borderRadius: 'var(--radius-xl)', padding: 20 }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--success)', marginBottom: 8 }}>
+              Data Licensing
+            </h3>
             <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>
-              Most MEF datasets are published under CC-BY 4.0. Please attribute the source ministry when using this data.
+              Keep source attribution to the relevant Cambodian ministry or NBC when republishing API results.
             </p>
           </div>
         </div>
+
+        <div style={{ marginTop: 20, fontSize: '13px', color: 'var(--text-muted)' }}>
+          Supabase project base URL:{' '}
+          <a href={SUPABASE_URL} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-text)' }}>
+            {SUPABASE_URL} <ExternalLink size={12} />
+          </a>
+        </div>
       </div>
 
-      <style>{`
-        @media (max-width: 900px) {
-          div[style*="gridTemplateColumns: 280px"] { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
+      <style>{'@media (max-width: 900px) { div[style*="grid-template-columns: 280px"] { grid-template-columns: 1fr !important; } }'}</style>
     </div>
   );
 }

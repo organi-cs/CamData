@@ -1,39 +1,82 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, MapPin, ArrowRight } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { MapContainer, TileLayer, CircleMarker, Tooltip as MapTooltip } from 'react-leaflet';
 import '../styles/design-tokens.css';
 
 const PROVINCES = [
-  { slug: 'banteay-meanchey', name: 'Banteay Meanchey', nameKm: 'បន្ទាយមានជ័យ', type: 'Province', population: '0.9M', capital: 'Serei Saophoan' },
-  { slug: 'battambang', name: 'Battambang', nameKm: 'បាត់ដំបង', type: 'Province', population: '1.0M', capital: 'Battambang City' },
-  { slug: 'kampong-cham', name: 'Kampong Cham', nameKm: 'កំពង់ចាម', type: 'Province', population: '0.9M', capital: 'Kampong Cham City' },
-  { slug: 'kampong-chhnang', name: 'Kampong Chhnang', nameKm: 'កំពង់ឆ្នាំង', type: 'Province', population: '0.5M', capital: 'Kampong Chhnang City' },
-  { slug: 'kampong-speu', name: 'Kampong Speu', nameKm: 'កំពង់ស្ពឺ', type: 'Province', population: '0.9M', capital: 'Chbar Mon' },
-  { slug: 'kampong-thom', name: 'Kampong Thom', nameKm: 'កំពង់ធំ', type: 'Province', population: '0.7M', capital: 'Stung Sen' },
-  { slug: 'kampot', name: 'Kampot', nameKm: 'កំពត', type: 'Province', population: '0.6M', capital: 'Kampot City' },
-  { slug: 'kandal', name: 'Kandal', nameKm: 'កណ្ដាល', type: 'Province', population: '1.2M', capital: 'Ta Khmau' },
-  { slug: 'kep', name: 'Kep', nameKm: 'កែប', type: 'Province', population: '0.04M', capital: 'Kep City' },
-  { slug: 'koh-kong', name: 'Koh Kong', nameKm: 'កោះកុង', type: 'Province', population: '0.1M', capital: 'Koh Kong City' },
-  { slug: 'kratie', name: 'Kratié', nameKm: 'ក្រចេះ', type: 'Province', population: '0.4M', capital: 'Kratié City' },
-  { slug: 'mondulkiri', name: 'Mondulkiri', nameKm: 'មណ្ឌលគិរី', type: 'Province', population: '0.1M', capital: 'Sen Monorom' },
-  { slug: 'oddar-meanchey', name: 'Oddar Meanchey', nameKm: 'ឧត្តរមានជ័យ', type: 'Province', population: '0.3M', capital: 'Samraong' },
-  { slug: 'pailin', name: 'Pailin', nameKm: 'ប៉ៃលិន', type: 'Province', population: '0.07M', capital: 'Pailin City' },
-  { slug: 'phnom-penh', name: 'Phnom Penh', nameKm: 'ភ្នំពេញ', type: 'Capital', population: '2.3M', capital: 'Phnom Penh' },
-  { slug: 'preah-sihanouk', name: 'Preah Sihanouk', nameKm: 'ព្រះសីហនុ', type: 'Province', population: '0.3M', capital: 'Sihanoukville' },
-  { slug: 'preah-vihear', name: 'Preah Vihear', nameKm: 'ព្រះវិហារ', type: 'Province', population: '0.3M', capital: 'Tbeng Meanchey' },
-  { slug: 'prey-veng', name: 'Prey Veng', nameKm: 'ព្រៃវែង', type: 'Province', population: '1.1M', capital: 'Prey Veng City' },
-  { slug: 'pursat', name: 'Pursat', nameKm: 'ពោធិ៍សាត់', type: 'Province', population: '0.4M', capital: 'Pursat City' },
-  { slug: 'ratanakiri', name: 'Ratanakiri', nameKm: 'រតនគិរី', type: 'Province', population: '0.2M', capital: 'Banlung' },
-  { slug: 'siem-reap', name: 'Siem Reap', nameKm: 'សៀមរាប', type: 'Province', population: '1.0M', capital: 'Siem Reap City' },
-  { slug: 'stung-treng', name: 'Stung Treng', nameKm: 'ស្ទឹងត្រែង', type: 'Province', population: '0.2M', capital: 'Stung Treng City' },
-  { slug: 'svay-rieng', name: 'Svay Rieng', nameKm: 'ស្វាយរៀង', type: 'Province', population: '0.5M', capital: 'Svay Rieng City' },
-  { slug: 'takeo', name: 'Takéo', nameKm: 'តាកែវ', type: 'Province', population: '0.9M', capital: 'Takéo City' },
-  { slug: 'tboung-khmum', name: 'Tboung Khmum', nameKm: 'ត្បូងឃ្មុំ', type: 'Province', population: '0.8M', capital: 'Suong' },
+  { slug: 'banteay-meanchey', name: 'Banteay Meanchey', nameKm: 'បន្ទាយមានជ័យ', type: 'Province', population: '0.9M', capital: 'Serei Saophoan', lat: 13.585, lng: 103.002 },
+  { slug: 'battambang', name: 'Battambang', nameKm: 'បាត់ដំបង', type: 'Province', population: '1.0M', capital: 'Battambang City', lat: 13.095, lng: 103.202 },
+  { slug: 'kampong-cham', name: 'Kampong Cham', nameKm: 'កំពង់ចាម', type: 'Province', population: '0.9M', capital: 'Kampong Cham City', lat: 12.000, lng: 105.467 },
+  { slug: 'kampong-chhnang', name: 'Kampong Chhnang', nameKm: 'កំពង់ឆ្នាំង', type: 'Province', population: '0.5M', capital: 'Kampong Chhnang City', lat: 12.250, lng: 104.667 },
+  { slug: 'kampong-speu', name: 'Kampong Speu', nameKm: 'កំពង់ស្ពឺ', type: 'Province', population: '0.9M', capital: 'Chbar Mon', lat: 11.450, lng: 104.520 },
+  { slug: 'kampong-thom', name: 'Kampong Thom', nameKm: 'កំពង់ធំ', type: 'Province', population: '0.7M', capital: 'Stung Sen', lat: 12.711, lng: 104.889 },
+  { slug: 'kampot', name: 'Kampot', nameKm: 'កំពត', type: 'Province', population: '0.6M', capital: 'Kampot City', lat: 10.617, lng: 104.183 },
+  { slug: 'kandal', name: 'Kandal', nameKm: 'កណ្ដាល', type: 'Province', population: '1.2M', capital: 'Ta Khmau', lat: 11.230, lng: 105.120 },
+  { slug: 'kep', name: 'Kep', nameKm: 'កែប', type: 'Province', population: '0.04M', capital: 'Kep City', lat: 10.483, lng: 104.317 },
+  { slug: 'koh-kong', name: 'Koh Kong', nameKm: 'កោះកុង', type: 'Province', population: '0.1M', capital: 'Koh Kong City', lat: 11.617, lng: 103.000 },
+  { slug: 'kratie', name: 'Kratié', nameKm: 'ក្រចេះ', type: 'Province', population: '0.4M', capital: 'Kratié City', lat: 12.488, lng: 106.019 },
+  { slug: 'mondulkiri', name: 'Mondulkiri', nameKm: 'មណ្ឌលគិរី', type: 'Province', population: '0.1M', capital: 'Sen Monorom', lat: 12.450, lng: 107.183 },
+  { slug: 'oddar-meanchey', name: 'Oddar Meanchey', nameKm: 'ឧត្តរមានជ័យ', type: 'Province', population: '0.3M', capital: 'Samraong', lat: 14.180, lng: 103.520 },
+  { slug: 'pailin', name: 'Pailin', nameKm: 'ប៉ៃលិន', type: 'Province', population: '0.07M', capital: 'Pailin City', lat: 12.850, lng: 102.600 },
+  { slug: 'phnom-penh', name: 'Phnom Penh', nameKm: 'ភ្នំពេញ', type: 'Capital', population: '2.3M', capital: 'Phnom Penh', lat: 11.556, lng: 104.928 },
+  { slug: 'preah-sihanouk', name: 'Preah Sihanouk', nameKm: 'ព្រះសីហនុ', type: 'Province', population: '0.3M', capital: 'Sihanoukville', lat: 10.633, lng: 103.500 },
+  { slug: 'preah-vihear', name: 'Preah Vihear', nameKm: 'ព្រះវិហារ', type: 'Province', population: '0.3M', capital: 'Tbeng Meanchey', lat: 13.800, lng: 104.980 },
+  { slug: 'prey-veng', name: 'Prey Veng', nameKm: 'ព្រៃវែង', type: 'Province', population: '1.1M', capital: 'Prey Veng City', lat: 11.483, lng: 105.325 },
+  { slug: 'pursat', name: 'Pursat', nameKm: 'ពោធិ៍សាត់', type: 'Province', population: '0.4M', capital: 'Pursat City', lat: 12.539, lng: 103.919 },
+  { slug: 'ratanakiri', name: 'Ratanakiri', nameKm: 'រតនគិរី', type: 'Province', population: '0.2M', capital: 'Banlung', lat: 13.730, lng: 107.000 },
+  { slug: 'siem-reap', name: 'Siem Reap', nameKm: 'សៀមរាប', type: 'Province', population: '1.0M', capital: 'Siem Reap City', lat: 13.363, lng: 103.856 },
+  { slug: 'stung-treng', name: 'Stung Treng', nameKm: 'ស្ទឹងត្រែង', type: 'Province', population: '0.2M', capital: 'Stung Treng City', lat: 13.533, lng: 105.967 },
+  { slug: 'svay-rieng', name: 'Svay Rieng', nameKm: 'ស្វាយរៀង', type: 'Province', population: '0.5M', capital: 'Svay Rieng City', lat: 11.088, lng: 105.800 },
+  { slug: 'takeo', name: 'Takéo', nameKm: 'តាកែវ', type: 'Province', population: '0.9M', capital: 'Takéo City', lat: 10.983, lng: 104.783 },
+  { slug: 'tboung-khmum', name: 'Tboung Khmum', nameKm: 'ត្បូងឃ្មុំ', type: 'Province', population: '0.8M', capital: 'Suong', lat: 12.000, lng: 105.650 },
 ];
+
+function CambodiaMap({ provinces, onProvinceClick }) {
+  return (
+    <MapContainer
+      center={[12.3, 104.5]}
+      zoom={7}
+      style={{ width: '100%', height: '100%', borderRadius: 'inherit' }}
+      scrollWheelZoom={false}
+      zoomControl={true}
+    >
+      <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        subdomains="abcd"
+        maxZoom={19}
+      />
+      {provinces.map(p => (
+        <CircleMarker
+          key={p.slug}
+          center={[p.lat, p.lng]}
+          radius={p.type === 'Capital' ? 10 : 7}
+          pathOptions={{
+            color: p.type === 'Capital' ? '#1a1a1a' : '#4338ca',
+            fillColor: p.type === 'Capital' ? '#FFCC33' : '#818cf8',
+            fillOpacity: 0.85,
+            weight: 2,
+          }}
+          eventHandlers={{ click: () => onProvinceClick(p.slug) }}
+        >
+          <MapTooltip>
+            <strong>{p.name}</strong>
+            <br />
+            {p.nameKm} · Pop. {p.population}
+            <br />
+            <span style={{ fontSize: 11, color: '#666' }}>Click to explore →</span>
+          </MapTooltip>
+        </CircleMarker>
+      ))}
+    </MapContainer>
+  );
+}
 
 export default function ProvincesPage() {
   const [search, setSearch] = useState('');
+  const navigate = useNavigate();
 
   const filtered = PROVINCES.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -59,13 +102,9 @@ export default function ProvincesPage() {
         <p style={{ fontSize: 16, color: 'var(--text-secondary)' }}>Cambodia's 25 provinces and capital city</p>
       </div>
 
-      {/* Map Placeholder */}
-      <div style={{ background: 'linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%)', borderRadius: 16, height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 32, border: '1px solid #c7d2fe' }}>
-        <div style={{ textAlign: 'center' }}>
-          <MapPin size={44} color="#4338ca" />
-          <p style={{ marginTop: 12, fontSize: 18, fontWeight: 700, color: '#312e81' }}>Interactive Map</p>
-          <p style={{ fontSize: 14, color: '#4338ca', marginTop: 4 }}>Click a province card below to explore its data</p>
-        </div>
+      {/* Leaflet Map */}
+      <div style={{ borderRadius: 16, height: 380, overflow: 'hidden', marginBottom: 32, border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+        <CambodiaMap provinces={PROVINCES} onProvinceClick={(slug) => navigate(`/provinces/${slug}`)} />
       </div>
 
       {/* Search */}
@@ -94,8 +133,8 @@ export default function ProvincesPage() {
           <Link to={`/provinces/${capital.slug}`} style={{ textDecoration: 'none' }}>
             <div
               style={{ background: 'linear-gradient(135deg, var(--accent-light) 0%, var(--bg-primary) 100%)', border: '1px solid var(--accent-primary)', borderRadius: 14, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'all 0.15s' }}
-              onMouseOver={(e) => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
+              onMouseOver={e => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
+              onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; }}
             >
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
@@ -121,8 +160,8 @@ export default function ProvincesPage() {
               <Link key={province.slug} to={`/provinces/${province.slug}`} style={{ textDecoration: 'none' }}>
                 <div
                   style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-light)', borderRadius: 12, padding: '18px 20px', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                  onMouseOver={(e) => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.borderColor = 'var(--accent-primary)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                  onMouseOut={(e) => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.transform = 'none'; }}
+                  onMouseOver={e => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.borderColor = 'var(--accent-primary)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseOut={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.transform = 'none'; }}
                 >
                   <div>
                     <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 3 }}>{province.name}</h3>
