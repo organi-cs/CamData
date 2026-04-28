@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/api/mef/:path*", "destination": "https://data.mef.gov.kh/api/v1/:path*" },
+    { "source": "/api/waqi/:path*", "destination": "https://api.waqi.info/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
