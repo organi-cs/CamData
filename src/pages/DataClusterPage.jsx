@@ -20,8 +20,6 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date().toISOString(),
             hasGeospatial: true,
             category: 'Mekong River & Water',
-            sparklineData: [8.2, 8.5, 8.1, 7.9, 8.3, 8.7, 9.1, 8.8, 8.4, 8.0],
-            downloadCount: 5420,
         },
         {
             id: 'tonle-sap-levels',
@@ -31,8 +29,6 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
             hasGeospatial: true,
             category: 'Mekong River & Water',
-            sparklineData: [5.2, 5.5, 5.8, 6.1, 6.4, 6.8, 7.2, 7.5, 7.1, 6.8],
-            downloadCount: 3890,
         },
         {
             id: 'flood-alerts',
@@ -42,8 +38,6 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
             hasGeospatial: true,
             category: 'Mekong River & Water',
-            sparklineData: [2, 1, 3, 5, 8, 12, 9, 6, 4, 3],
-            downloadCount: 2340,
         },
     ],
     'agriculture': [
@@ -55,8 +49,6 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
             hasGeospatial: true,
             category: 'Agricultural Trade',
-            sparklineData: [45000, 52000, 48000, 55000, 61000, 58000, 65000, 72000, 68000, 75000],
-            downloadCount: 8320,
         },
         {
             id: 'rubber-production',
@@ -66,8 +58,6 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
             hasGeospatial: true,
             category: 'Agricultural Trade',
-            sparklineData: [120, 135, 128, 142, 155, 148, 160, 175, 168, 182],
-            downloadCount: 2780,
         },
         {
             id: 'cassava-yield',
@@ -77,8 +67,6 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
             hasGeospatial: true,
             category: 'Agricultural Trade',
-            sparklineData: [850, 920, 880, 950, 1020, 980, 1050, 1120, 1080, 1150],
-            downloadCount: 1560,
         },
     ],
     'garment': [
@@ -90,8 +78,6 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
             hasGeospatial: true,
             category: 'Garment & Manufacturing',
-            sparklineData: [720000, 715000, 730000, 725000, 740000, 738000, 745000, 750000, 755000, 760000],
-            downloadCount: 4890,
         },
         {
             id: 'garment-exports',
@@ -101,8 +87,6 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
             hasGeospatial: false,
             category: 'Garment & Manufacturing',
-            sparklineData: [850, 920, 880, 950, 1020, 980, 1050, 1120, 1080, 1150],
-            downloadCount: 3210,
         },
     ],
     'tourism': [
@@ -114,8 +98,6 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
             hasGeospatial: true,
             category: 'Tourism & Heritage',
-            sparklineData: [2500, 3200, 2800, 3500, 4100, 3800, 4500, 5200, 4800, 5500],
-            downloadCount: 15780,
         },
         {
             id: 'international-arrivals',
@@ -125,8 +107,6 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
             hasGeospatial: false,
             category: 'Tourism & Heritage',
-            sparklineData: [450000, 520000, 480000, 550000, 610000, 580000, 650000, 720000, 680000, 750000],
-            downloadCount: 6540,
         },
     ],
     'urban-mobility': [
@@ -138,8 +118,6 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
             hasGeospatial: true,
             category: 'Urban Mobility',
-            sparklineData: [45, 38, 52, 41, 35, 48, 55, 42, 39, 47],
-            downloadCount: 3210,
         },
         {
             id: 'bus-ridership',
@@ -149,8 +127,6 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
             hasGeospatial: true,
             category: 'Urban Mobility',
-            sparklineData: [12000, 11500, 13200, 12800, 14500, 15200, 14800, 16000, 15500, 17200],
-            downloadCount: 1890,
         },
     ],
     'finance': [
@@ -162,19 +138,15 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date().toISOString(),
             hasGeospatial: false,
             category: 'Financial Markets',
-            sparklineData: [4100, 4095, 4102, 4098, 4105, 4110, 4108, 4115, 4112, 4120],
-            downloadCount: 12450,
         },
         {
             id: 'csx-index',
             title: 'CSX Stock Market Index',
-            description: 'Daily Cambodia Securities Exchange trading data.',
+            description: 'Daily Cambodia Securities Exchange index and trading data.',
             ministry: MINISTRIES.nbc,
             lastUpdated: new Date().toISOString(),
             hasGeospatial: false,
             category: 'Financial Markets',
-            sparklineData: [560, 555, 572, 568, 580, 575, 590, 585, 595, 602],
-            downloadCount: 6540,
         },
         {
             id: 'microfinance',
@@ -184,8 +156,6 @@ const CLUSTER_DATASETS = {
             lastUpdated: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
             hasGeospatial: true,
             category: 'Financial Markets',
-            sparklineData: [250, 280, 265, 310, 340, 325, 380, 410, 395, 450],
-            downloadCount: 2340,
         },
     ],
 };

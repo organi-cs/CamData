@@ -12,14 +12,12 @@ import { RomduolIconOutline } from '../components/ui/RomduolIcon';
 import { DATA_CLUSTERS, MINISTRIES } from '../types';
 import { fetchIndicators, INDICATORS } from '../services/worldbank';
 import { fetchCambodiaClimate } from '../services/nasaPowerApi';
+import { getLatestExchangeRates } from '../services/supabaseData';
 import '../styles/design-tokens.css';
 
-// Supplementary static indicators for data WB doesn't cover
+// Supplementary static indicators for clusters without WB coverage
+// Finance KHR rate is fetched live from Supabase exchange_rates table
 const STATIC_CARDS = {
-  finance: [
-    { label: 'USD/KHR Rate', value: '4,120', source: 'NBC', note: 'live feed' },
-    { label: 'CSX Index', value: '481.25 pts', source: 'CSX', note: 'Apr 2026' },
-  ],
   agriculture: [
     { label: 'Rice Exports (est.)', value: '75,000 t', source: 'MAFF', note: 'Jan 2025' },
     { label: 'Cassava Yield (est.)', value: '1.15M t', source: 'MAFF', note: '2024' },
@@ -33,14 +31,13 @@ const STATIC_CARDS = {
     { label: 'Workers Employed (est.)', value: '760,000', source: 'MIH', note: '2025' },
   ],
   'mekong-water': [
-    { label: 'Mekong Level — Kratie', value: '8.0 m', source: 'MOWRAM', note: 'seasonal' },
-    { label: 'Tonle Sap — Phnom Penh', value: '3.2 m', source: 'MOWRAM', note: 'seasonal' },
-    { label: 'Flood Alerts Active', value: '3', source: 'MOWRAM', note: 'current' },
+    { label: 'Mekong Level — Kratie (est.)', value: '~8 m', source: 'MOWRAM', note: 'seasonal avg.' },
+    { label: 'Tonle Sap — P. Penh (est.)', value: '~3 m', source: 'MOWRAM', note: 'seasonal avg.' },
     { label: 'Monthly Rainfall', value: '142 mm', source: 'MOWRAM', note: 'Nov 2024' },
   ],
   'urban-mobility': [
-    { label: 'Daily Traffic Incidents', value: '47', source: 'MPWT', note: 'Phnom Penh' },
-    { label: 'Bus Ridership / Day', value: '17,200', source: 'MPWT', note: '2024' },
+    { label: 'Daily Traffic Incidents (est.)', value: '~47', source: 'MPWT', note: '2024' },
+    { label: 'Bus Ridership / Day (est.)', value: '~17,200', source: 'MPWT', note: '2024' },
     { label: 'Registered Vehicles', value: '3.6M', source: 'MPWT', note: '2024' },
     { label: 'Road Network', value: '62,000 km', source: 'MPWT', note: '2024' },
   ],
@@ -58,53 +55,8 @@ const STATIC_CARDS = {
   ],
 };
 
-// Static chart data for clusters with no World Bank coverage
-const STATIC_CHARTS = {
-  'mekong-water': [
-    {
-      title: 'Mekong River Level at Kratie (m) — seasonal pattern',
-      data: [
-        { label: 'Jan', value: 4.2 }, { label: 'Feb', value: 3.8 }, { label: 'Mar', value: 3.5 },
-        { label: 'Apr', value: 3.8 }, { label: 'May', value: 6.1 }, { label: 'Jun', value: 8.7 },
-        { label: 'Jul', value: 11.2 }, { label: 'Aug', value: 12.8 }, { label: 'Sep', value: 13.1 },
-        { label: 'Oct', value: 11.5 }, { label: 'Nov', value: 8.0 }, { label: 'Dec', value: 5.8 },
-      ],
-      type: 'area',
-    },
-    {
-      title: 'Average Monthly Rainfall (mm)',
-      data: [
-        { label: 'Jan', value: 8 }, { label: 'Feb', value: 12 }, { label: 'Mar', value: 35 },
-        { label: 'Apr', value: 78 }, { label: 'May', value: 142 }, { label: 'Jun', value: 168 },
-        { label: 'Jul', value: 182 }, { label: 'Aug', value: 195 }, { label: 'Sep', value: 210 },
-        { label: 'Oct', value: 172 }, { label: 'Nov', value: 68 }, { label: 'Dec', value: 22 },
-      ],
-      type: 'bar',
-    },
-  ],
-  'urban-mobility': [
-    {
-      title: 'Daily Traffic Incidents — Phnom Penh (est. 2024)',
-      data: [
-        { label: 'Jan', value: 52 }, { label: 'Feb', value: 48 }, { label: 'Mar', value: 55 },
-        { label: 'Apr', value: 41 }, { label: 'May', value: 38 }, { label: 'Jun', value: 45 },
-        { label: 'Jul', value: 50 }, { label: 'Aug', value: 42 }, { label: 'Sep', value: 39 },
-        { label: 'Oct', value: 47 }, { label: 'Nov', value: 44 }, { label: 'Dec', value: 48 },
-      ],
-      type: 'bar',
-    },
-    {
-      title: 'Public Bus Ridership — Daily Average (est. 2024)',
-      data: [
-        { label: 'Jan', value: 12000 }, { label: 'Feb', value: 11500 }, { label: 'Mar', value: 13200 },
-        { label: 'Apr', value: 12800 }, { label: 'May', value: 14500 }, { label: 'Jun', value: 15200 },
-        { label: 'Jul', value: 14800 }, { label: 'Aug', value: 16000 }, { label: 'Sep', value: 15500 },
-        { label: 'Oct', value: 17200 }, { label: 'Nov', value: 16800 }, { label: 'Dec', value: 18000 },
-      ],
-      type: 'line',
-    },
-  ],
-};
+// No fabricated static chart data — charts only render from live API sources
+const STATIC_CHARTS = {};
 
 // Indicator config per cluster — codes are looked up in Supabase `indicators` table
 // World Bank codes use standard WB format; WHO codes use WHO_* prefix; FAO use FAO_*
@@ -254,9 +206,9 @@ function IndicatorCard({ label, value, change, source, note }) {
 
 const CLUSTER_DATASETS = {
   finance: [
-    { id: 'usd-exchange-rate', title: 'USD/KHR Daily Exchange Rate', description: 'Official daily exchange rates from the National Bank of Cambodia.', ministry: MINISTRIES.nbc, lastUpdated: new Date().toISOString(), hasGeospatial: false, category: 'Financial Markets', sparklineData: [4100, 4095, 4102, 4098, 4105, 4110, 4108, 4115, 4112, 4120], downloadCount: 12450 },
-    { id: 'csx-index', title: 'CSX Stock Market Index', description: 'Daily Cambodia Securities Exchange index and trading data.', ministry: MINISTRIES.nbc, lastUpdated: new Date().toISOString(), hasGeospatial: false, category: 'Financial Markets', sparklineData: [560, 555, 572, 568, 580, 575, 590, 585, 595, 602], downloadCount: 6540 },
-    { id: 'microfinance', title: 'Microfinance Loan Disbursements', description: 'Monthly microfinance stats by province.', ministry: MINISTRIES.nbc, lastUpdated: new Date(Date.now() - 15 * 864e5).toISOString(), hasGeospatial: true, category: 'Financial Markets', sparklineData: [250, 280, 265, 310, 340, 325, 380, 410, 395, 450], downloadCount: 2340 },
+    { id: 'usd-exchange-rate', title: 'USD/KHR Daily Exchange Rate', description: 'Official daily exchange rates from the National Bank of Cambodia.', ministry: MINISTRIES.nbc, lastUpdated: new Date().toISOString(), hasGeospatial: false, category: 'Financial Markets' },
+    { id: 'csx-index', title: 'CSX Stock Market Index', description: 'Daily Cambodia Securities Exchange index and trading data.', ministry: MINISTRIES.nbc, lastUpdated: new Date().toISOString(), hasGeospatial: false, category: 'Financial Markets' },
+    { id: 'microfinance', title: 'Microfinance Loan Disbursements', description: 'Monthly microfinance stats by province.', ministry: MINISTRIES.nbc, lastUpdated: new Date(Date.now() - 15 * 864e5).toISOString(), hasGeospatial: true, category: 'Financial Markets' },
   ],
 };
 
@@ -269,6 +221,7 @@ export default function TopicDashboardPage() {
   const [wbData, setWbData] = useState({});
   const [loading, setLoading] = useState(false);
   const [climateData, setClimateData] = useState(null);
+  const [khrRate, setKhrRate] = useState(null);
 
   useEffect(() => {
     if (!wbConfig) return;
@@ -292,6 +245,16 @@ export default function TopicDashboardPage() {
       .catch(() => {});
   }, [slug]);
 
+  useEffect(() => {
+    if (slug !== 'finance') return;
+    getLatestExchangeRates()
+      .then(rows => {
+        const usd = rows?.find(r => r.currency === 'USD');
+        if (usd?.average) setKhrRate(Math.round(usd.average).toLocaleString());
+      })
+      .catch(() => {});
+  }, [slug]);
+
   if (!cluster) {
     return (
       <div style={{ padding: '80px 24px', textAlign: 'center' }}>
@@ -303,6 +266,9 @@ export default function TopicDashboardPage() {
 
   const Icon = LucideIcons[cluster.icon] || LucideIcons.Database;
   const staticCards = STATIC_CARDS[slug] || [];
+  const khrCards = slug === 'finance' && khrRate
+    ? [{ label: 'USD/KHR Rate', value: khrRate, source: 'NBC', note: 'today' }]
+    : [];
 
   // Build WB indicator cards
   const wbCards = wbConfig ? wbConfig.indicators.map(ind => {
@@ -327,7 +293,7 @@ export default function TopicDashboardPage() {
   const staticCharts = STATIC_CHARTS[slug] || [];
   const showStaticCharts = !wbConfig || (!loading && !hasWbCharts);
 
-  const allCards = [...wbCards, ...staticCards];
+  const allCards = [...wbCards, ...khrCards, ...staticCards];
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>

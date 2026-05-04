@@ -29,7 +29,7 @@ export function DataCard({
         ministry,
         lastUpdated,
         hasGeospatial = false,
-        sparklineData = [20, 35, 28, 45, 38, 52, 48, 60, 55, 70],
+        sparklineData = null,
         category,
         downloadCount = 0,
     } = dataset;
@@ -291,7 +291,8 @@ export function DataCard({
                 </div>
 
                 {/* Sparkline */}
-                <div style={sparklineContainerStyle}>
+                {sparklineData && sparklineData.length >= 2 && (
+                  <div style={sparklineContainerStyle}>
                     <svg width="100%" height="30" viewBox="0 0 100 30" preserveAspectRatio="none">
                         <polyline
                             points={generateSparkline(sparklineData)}
@@ -302,7 +303,8 @@ export function DataCard({
                             strokeLinejoin="round"
                         />
                     </svg>
-                </div>
+                  </div>
+                )}
 
                 <div style={actionsStyle}>
                     <button
