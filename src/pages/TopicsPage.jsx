@@ -8,12 +8,15 @@ import { DATA_CLUSTERS } from '../types';
 import '../styles/design-tokens.css';
 
 const CLUSTER_STATS = {
-  'mekong-water': { datasets: 3, liveFeeds: 2 },
-  'agriculture': { datasets: 5, liveFeeds: 0 },
-  'garment': { datasets: 4, liveFeeds: 0 },
-  'tourism': { datasets: 6, liveFeeds: 1 },
-  'urban-mobility': { datasets: 3, liveFeeds: 1 },
-  'finance': { datasets: 8, liveFeeds: 3 },
+  'mekong-water':  { datasets: 3, liveFeeds: 2 },
+  'agriculture':   { datasets: 5, liveFeeds: 0 },
+  'garment':       { datasets: 4, liveFeeds: 0 },
+  'tourism':       { datasets: 6, liveFeeds: 1 },
+  'urban-mobility':{ datasets: 3, liveFeeds: 1 },
+  'finance':       { datasets: 8, liveFeeds: 3 },
+  'health':        { datasets: 4, liveFeeds: 0 },
+  'environment':   { datasets: 3, liveFeeds: 1 },
+  'labour':        { datasets: 3, liveFeeds: 0 },
 };
 
 export default function TopicsPage() {
@@ -152,6 +155,8 @@ export default function TopicsPage() {
               { path: '/exchange-rates', label: 'Exchange Rates', desc: 'Live KHR rates from NBC', color: '#FFCC33', icon: 'TrendingUp' },
               { path: '/air-quality', label: 'Air Quality', desc: 'Real-time AQI from WAQI', color: '#10b981', icon: 'Wind' },
               { path: '/stock-market', label: 'Stock Market', desc: 'CSX index & listed stocks', color: '#0ea5e9', icon: 'BarChart3' },
+              { path: '/weather', label: 'Weather', desc: '7-day forecasts from Open-Meteo', color: '#f97316', icon: 'CloudSun' },
+              { path: '/alerts', label: 'Hazard Alerts', desc: 'Floods & earthquakes from GDACS/USGS', color: '#ef4444', icon: 'AlertTriangle' },
               { path: '/provinces', label: 'Provinces', desc: '25 provinces interactive map', color: '#a855f7', icon: 'Map' },
             ].map(({ path, label, desc, color, icon }) => {
               const Icon = LucideIcons[icon] || LucideIcons.Database;

@@ -137,6 +137,24 @@ export async function getAirQualityOverview(hours = 24) {
     .sort((left, right) => (order.get(left.stationId) ?? 999) - (order.get(right.stationId) ?? 999));
 }
 
+export async function getDisasterAlerts({ days = 60, eventType = null } = {}) {
+  if (!supabase) return [];
+
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  let query = supabase
+    .from('disaster_alerts')
+    .select('*')
+    .gte('event_date', cutoff)
+    .order('event_date', { ascending: false })
+    .limit(200);
+
+  if (eventType) query = query.eq('event_type', eventType);
+
+  const { data, error } = await query;
+  if (error) return [];
+  return data ?? [];
+}
+
 export function normalizeFallbackAirQuality(payload) {
   const item = Array.isArray(payload) ? payload[0] : payload;
   const aqi = parseNumber(item?.aqi ?? item?.AQI ?? item?.index ?? item?.value);

@@ -1,8 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, MapPin, Users, Map, Database } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { fetchWeatherForecast } from '../services/weatherApi';
 import '../styles/design-tokens.css';
+
+const PROVINCE_CITY_MAP = {
+  'phnom-penh':    'phnom-penh',
+  'siem-reap':     'siem-reap',
+  'battambang':    'battambang',
+  'preah-sihanouk':'sihanoukville',
+  'kampot':        'kampot',
+  'kampong-cham':  'kampong-cham',
+  'kampong-thom':  'kampong-thom',
+  'kratie':        'kratie',
+  'mondulkiri':    'sen-monorom',
+  'ratanakiri':    'banlung',
+};
 
 const PROVINCES = [
   { slug: 'banteay-meanchey', name: 'Banteay Meanchey', nameKm: 'បន្ទាយមានជ័យ', type: 'Province', population: '0.9M', area: '6,679 km²', capital: 'Serei Saophoan', districts: 9, description: 'A northwestern province bordering Thailand, known for Poipet border crossing and Banteay Chhmar temple.', highlights: ['Poipet SEZ', 'Banteay Chhmar Temple', 'Thailand border trade'] },
@@ -35,6 +49,15 @@ const PROVINCES = [
 export default function ProvinceDetailPage() {
   const { slug } = useParams();
   const province = PROVINCES.find(p => p.slug === slug);
+  const [weather, setWeather] = useState(null);
+
+  useEffect(() => {
+    const cityId = PROVINCE_CITY_MAP[slug];
+    if (!cityId) return;
+    fetchWeatherForecast(cityId).then((days) => {
+      if (days?.length) setWeather(days[0]);
+    }).catch(() => {});
+  }, [slug]);
 
   if (!province) {
     return (
@@ -139,6 +162,31 @@ export default function ProvinceDetailPage() {
               ))}
             </div>
 
+            {/* Weather widget */}
+            {weather && (
+              <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-xl)', padding: '24px' }}>
+                <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '16px' }}>Today's Weather</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <span style={{ fontSize: 40 }}>{weather.weatherEmoji}</span>
+                  <div>
+                    <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1 }}>
+                      {weather.tempMax != null ? `${Math.round(weather.tempMax)}°C` : '—'}
+                    </p>
+                    <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>{weather.weatherLabel}</p>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13 }}>
+                  <div style={{ color: 'var(--text-muted)' }}>Low: <strong style={{ color: 'var(--text-primary)' }}>{weather.tempMin != null ? `${Math.round(weather.tempMin)}°C` : '—'}</strong></div>
+                  <div style={{ color: 'var(--text-muted)' }}>Rain: <strong style={{ color: 'var(--text-primary)' }}>{weather.precipitation != null ? `${weather.precipitation} mm` : '—'}</strong></div>
+                  <div style={{ color: 'var(--text-muted)' }}>Wind: <strong style={{ color: 'var(--text-primary)' }}>{weather.windspeed != null ? `${Math.round(weather.windspeed)} km/h` : '—'}</strong></div>
+                  <div style={{ color: 'var(--text-muted)' }}>Humidity: <strong style={{ color: 'var(--text-primary)' }}>{weather.humidityMax != null ? `${Math.round(weather.humidityMax)}%` : '—'}</strong></div>
+                </div>
+                <Link to="/weather" style={{ display: 'block', marginTop: 12, fontSize: 13, color: 'var(--accent-text)', fontWeight: 500 }}>
+                  → 7-day forecast
+                </Link>
+              </div>
+            )}
+
             {/* Related data */}
             <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-xl)', padding: '24px' }}>
               <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '16px' }}>Related Data</h3>
@@ -146,6 +194,7 @@ export default function ProvinceDetailPage() {
                 { to: '/datasets?q=' + province.name, label: `Datasets for ${province.name}` },
                 { to: '/exchange-rates', label: 'Exchange Rates' },
                 { to: '/air-quality', label: 'Air Quality' },
+                { to: '/alerts', label: 'Hazard Alerts' },
               ].map(({ to, label }) => (
                 <Link key={to} to={to} style={{ display: 'block', padding: '10px 0', color: 'var(--accent-text)', fontSize: '14px', fontWeight: 500, borderBottom: '1px solid var(--border-light)' }}>
                   → {label}

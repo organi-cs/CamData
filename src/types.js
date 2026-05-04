@@ -148,6 +148,30 @@ export const DATA_CLUSTERS = [
     icon: 'TrendingUp',
     color: '#FFCC33',
     ministryId: 'nbc'
+  },
+  {
+    id: 'health',
+    name: 'Public Health',
+    description: 'Malaria, tuberculosis, child mortality, and immunisation coverage',
+    icon: 'HeartPulse',
+    color: '#EF4444',
+    ministryId: 'who'
+  },
+  {
+    id: 'environment',
+    name: 'Climate & Environment',
+    description: 'CO₂ emissions, deforestation, solar potential, and climate normals',
+    icon: 'Leaf',
+    color: '#10B981',
+    ministryId: 'nasa'
+  },
+  {
+    id: 'labour',
+    name: 'Labour & Employment',
+    description: 'Employment by sector, labour force participation, and wages',
+    icon: 'Briefcase',
+    color: '#8B5CF6',
+    ministryId: 'ilo'
   }
 ];
 
@@ -160,5 +184,8 @@ export const MINISTRIES = {
   mpwt: { id: 'mpwt', name: 'Ministry of Public Works & Transport', abbreviation: 'MPWT' },
   nbc: { id: 'nbc', name: 'National Bank of Cambodia', abbreviation: 'NBC' },
   mef: { id: 'mef', name: 'Ministry of Economy & Finance', abbreviation: 'MEF' },
-  moc: { id: 'moc', name: 'Ministry of Commerce', abbreviation: 'MOC' }
+  moc: { id: 'moc', name: 'Ministry of Commerce', abbreviation: 'MOC' },
+  who: { id: 'who', name: 'World Health Organization', abbreviation: 'WHO' },
+  nasa: { id: 'nasa', name: 'NASA / Open-Meteo', abbreviation: 'NASA' },
+  ilo: { id: 'ilo', name: 'International Labour Organization', abbreviation: 'ILO' }
 };

@@ -26,6 +26,8 @@ const TopicsPage = lazy(() => import('./pages/TopicsPage'));
 const TopicDashboardPage = lazy(() => import('./pages/TopicDashboardPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const DevelopersPage = lazy(() => import('./pages/DevelopersPage'));
+const WeatherPage = lazy(() => import('./pages/WeatherPage'));
+const DisasterAlertsPage = lazy(() => import('./pages/DisasterAlertsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 import './styles/design-tokens.css';
@@ -87,6 +89,8 @@ export default function App() {
                     <Route path="/exchange-rates" element={<ExchangeRatesPage />} />
                     <Route path="/air-quality" element={<AirQualityPage />} />
                     <Route path="/stock-market" element={<StockMarketPage />} />
+                    <Route path="/weather" element={<WeatherPage />} />
+                    <Route path="/alerts" element={<DisasterAlertsPage />} />
 
                     {/* Provinces */}
                     <Route path="/provinces" element={<ProvincesPage />} />

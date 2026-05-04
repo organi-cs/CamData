@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ExternalLink, Menu, X, Sun, Moon, Globe, Database, LayoutGrid, Code2 } from 'lucide-react';
+import { ExternalLink, Menu, X, Sun, Moon, Globe, Database, LayoutGrid, Code2, CloudSun, AlertTriangle } from 'lucide-react';
 import { RomduolIcon } from './ui/RomduolIcon';
 import { useTheme } from '../theme/ThemeContext';
 import { useI18n } from '../i18n/I18nContext';
@@ -20,6 +20,8 @@ export default function Nav() {
   const navLinks = [
     { path: '/datasets', label: 'Datasets', icon: Database },
     { path: '/cluster', label: 'Topics', icon: LayoutGrid },
+    { path: '/weather', label: 'Weather', icon: CloudSun },
+    { path: '/alerts', label: 'Alerts', icon: AlertTriangle },
     { path: '/developers', label: 'Developers', icon: Code2 },
   ];
 

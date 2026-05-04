@@ -14,6 +14,7 @@ import {
   Globe
 } from 'lucide-react';
 import { api } from '../services/api';
+import { fetchWeatherForecast } from '../services/weatherApi';
 import { HeroSearch } from '../components/features/HeroSearch';
 import { DataCard } from '../components/features/DataCard';
 import { RomduolIcon, RomduolIconOutline } from '../components/ui/RomduolIcon';
@@ -25,19 +26,21 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { t, isKhmer } = useI18n();
   const [stats, setStats] = useState({ rates: null, aqi: null });
+  const [weather, setWeather] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Icon mapping for clusters
   const iconMap = {
     Waves, Wheat, Factory, Landmark, Car, TrendingUp
   };
 
-  // Fetch live data on mount
   useEffect(() => {
     async function loadData() {
-      const rates = await api.getExchangeRates();
-      if (rates && Array.isArray(rates)) {
-        const usd = rates.find(r => r.currency_id === 'USD');
+      const [rates] = await Promise.allSettled([
+        api.getExchangeRates(),
+        fetchWeatherForecast('phnom-penh').then(days => { if (days?.length) setWeather(days[0]); }),
+      ]);
+      if (rates.status === 'fulfilled' && Array.isArray(rates.value)) {
+        const usd = rates.value.find(r => r.currency_id === 'USD');
         setStats(s => ({ ...s, rates: usd?.average || null }));
       }
     }
@@ -398,15 +401,11 @@ export default function HomePage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <Database size={18} color="var(--cluster-agriculture, #84CC16)" />
-                <p style={{ fontSize: '13px', color: 'var(--text-muted, #64748b)', margin: 0 }}>
-                  Datasets
-                </p>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted, #64748b)', margin: 0 }}>Topics</p>
               </div>
-              <p style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text-primary, #0f172a)', margin: 0 }}>
-                120+
-              </p>
+              <p style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text-primary, #0f172a)', margin: 0 }}>9</p>
               <p style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)', marginTop: '8px' }}>
-                Across 6 data clusters
+                Data clusters
               </p>
             </div>
 
@@ -419,17 +418,35 @@ export default function HomePage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <Users size={18} color="var(--cluster-tourism, #A855F7)" />
-                <p style={{ fontSize: '13px', color: 'var(--text-muted, #64748b)', margin: 0 }}>
-                  Data Sources
-                </p>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted, #64748b)', margin: 0 }}>Data Sources</p>
               </div>
-              <p style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text-primary, #0f172a)', margin: 0 }}>
-                8
-              </p>
+              <p style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text-primary, #0f172a)', margin: 0 }}>12+</p>
               <p style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)', marginTop: '8px' }}>
-                Government ministries
+                WHO, World Bank, NASA, UN &amp; more
               </p>
             </div>
+
+            {/* Weather card */}
+            <Link to="/weather" style={{ textDecoration: 'none' }}>
+              <div style={{
+                background: 'var(--bg-secondary, #f8fafc)',
+                borderRadius: 'var(--radius-xl, 16px)',
+                padding: '24px',
+                border: '1px solid var(--border-light, #e2e8f0)',
+                cursor: 'pointer',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <Globe size={18} color="#f97316" />
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted, #64748b)', margin: 0 }}>Phnom Penh</p>
+                </div>
+                <p style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text-primary, #0f172a)', margin: 0 }}>
+                  {weather ? `${weather.weatherEmoji} ${Math.round(weather.tempMax)}°C` : '—'}
+                </p>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)', marginTop: '8px' }}>
+                  {weather ? weather.weatherLabel : 'Weather forecast'}
+                </p>
+              </div>
+            </Link>
 
             {/* Stat Card 4 */}
             <div style={{

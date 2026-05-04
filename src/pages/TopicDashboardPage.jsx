@@ -11,6 +11,7 @@ import { DataCard } from '../components/features/DataCard';
 import { RomduolIconOutline } from '../components/ui/RomduolIcon';
 import { DATA_CLUSTERS, MINISTRIES } from '../types';
 import { fetchIndicators, INDICATORS } from '../services/worldbank';
+import { fetchCambodiaClimate } from '../services/nasaPowerApi';
 import '../styles/design-tokens.css';
 
 // Supplementary static indicators for data WB doesn't cover
@@ -42,6 +43,18 @@ const STATIC_CARDS = {
     { label: 'Bus Ridership / Day', value: '17,200', source: 'MPWT', note: '2024' },
     { label: 'Registered Vehicles', value: '3.6M', source: 'MPWT', note: '2024' },
     { label: 'Road Network', value: '62,000 km', source: 'MPWT', note: '2024' },
+  ],
+  health: [
+    { label: 'Dengue Cases (est.)', value: '14,200', source: 'WHO/MOH', note: '2023' },
+    { label: 'Hospital Beds per 1k', value: '0.8', source: 'WHO', note: '2021' },
+  ],
+  environment: [
+    { label: 'Protected Land Area', value: '23%', source: 'IUCN', note: '2024' },
+    { label: 'Avg Annual Rainfall', value: '1,400 mm', source: 'NASA POWER', note: 'climatology' },
+  ],
+  labour: [
+    { label: 'Min. Wage (garment)', value: '$204/mo', source: 'MoLVT', note: '2024' },
+    { label: 'Informal Economy Share', value: '~60%', source: 'ILO', note: 'est. 2023' },
   ],
 };
 
@@ -93,7 +106,8 @@ const STATIC_CHARTS = {
   ],
 };
 
-// World Bank config per cluster
+// Indicator config per cluster — codes are looked up in Supabase `indicators` table
+// World Bank codes use standard WB format; WHO codes use WHO_* prefix; FAO use FAO_*
 const WB_CONFIG = {
   finance: {
     indicators: [
@@ -133,6 +147,47 @@ const WB_CONFIG = {
     ],
     charts: [
       { code: INDICATORS.EXPORTS_GDP, title: 'Exports of Goods & Services (% of GDP)', type: 'line', yFormat: v => `${v.toFixed(1)}%` },
+    ],
+  },
+  health: {
+    indicators: [
+      { code: 'WHO_MALARIA_EST_INCIDENCE',       label: 'Malaria Incidence',    format: v => `${v.toFixed(1)} per 1k` },
+      { code: 'WHO_MDG_0000000026',              label: 'Life Expectancy',      format: v => `${v.toFixed(1)} yrs` },
+      { code: 'WHO_MDG_0000000007',              label: 'Under-5 Mortality',    format: v => `${v.toFixed(1)} per 1k` },
+      { code: 'WHO_WHS3_62',                    label: 'TB Incidence',         format: v => `${v.toFixed(0)} per 100k` },
+      { code: 'WHO_WHS4_544',                   label: 'DTP3 Coverage',        format: v => `${v.toFixed(0)}%` },
+    ],
+    charts: [
+      { code: 'WHO_MDG_0000000026',              title: 'Life Expectancy at Birth (years)',                    type: 'line', yFormat: v => `${v.toFixed(1)}` },
+      { code: 'WHO_MDG_0000000007',              title: 'Under-5 Mortality Rate (per 1,000 live births)',      type: 'area', yFormat: v => `${v.toFixed(1)}` },
+      { code: 'WHO_WHS3_62',                    title: 'Tuberculosis Incidence (per 100,000 population)',     type: 'bar',  yFormat: v => `${v.toFixed(0)}` },
+      { code: 'WHO_MALARIA_EST_INCIDENCE',       title: 'Malaria Incidence (per 1,000 population at risk)',   type: 'area', yFormat: v => `${v.toFixed(2)}` },
+    ],
+  },
+  environment: {
+    indicators: [
+      { code: INDICATORS.FOREST_AREA,    label: 'Forest Cover',     format: v => `${v.toFixed(1)}%` },
+      { code: INDICATORS.CO2_EMISSIONS,  label: 'CO₂ Emissions',    format: v => `${v.toFixed(2)} t/cap` },
+      { code: 'EG.ELC.ACCS.ZS',         label: 'Electricity Access', format: v => `${v.toFixed(1)}%` },
+    ],
+    charts: [
+      { code: INDICATORS.FOREST_AREA,    title: 'Forest Area (% of land area)',                    type: 'area', yFormat: v => `${v.toFixed(1)}%` },
+      { code: INDICATORS.CO2_EMISSIONS,  title: 'CO₂ Emissions (metric tons per capita)',          type: 'line', yFormat: v => `${v.toFixed(2)}` },
+      { code: 'EG.ELC.ACCS.ZS',         title: 'Access to Electricity (% of population)',         type: 'area', yFormat: v => `${v.toFixed(1)}%` },
+    ],
+  },
+  labour: {
+    indicators: [
+      { code: 'SL.TLF.CACT.ZS',    label: 'Labour Force Participation', format: v => `${v.toFixed(1)}%` },
+      { code: 'SL.UEM.TOTL.ZS',    label: 'Unemployment Rate',          format: v => `${v.toFixed(1)}%` },
+      { code: 'SL.AGR.EMPL.ZS',    label: 'Employment in Agriculture',  format: v => `${v.toFixed(1)}%` },
+      { code: 'SL.SRV.EMPL.ZS',    label: 'Employment in Services',     format: v => `${v.toFixed(1)}%` },
+    ],
+    charts: [
+      { code: 'SL.TLF.CACT.ZS',    title: 'Labour Force Participation Rate (% ages 15+)',          type: 'line', yFormat: v => `${v.toFixed(1)}%` },
+      { code: 'SL.AGR.EMPL.ZS',    title: 'Employment in Agriculture (% of total)',                type: 'area', yFormat: v => `${v.toFixed(1)}%` },
+      { code: 'SL.IND.EMPL.ZS',    title: 'Employment in Industry (% of total)',                  type: 'bar',  yFormat: v => `${v.toFixed(1)}%` },
+      { code: 'SL.SRV.EMPL.ZS',    title: 'Employment in Services (% of total)',                  type: 'bar',  yFormat: v => `${v.toFixed(1)}%` },
     ],
   },
 };
@@ -213,6 +268,7 @@ export default function TopicDashboardPage() {
 
   const [wbData, setWbData] = useState({});
   const [loading, setLoading] = useState(false);
+  const [climateData, setClimateData] = useState(null);
 
   useEffect(() => {
     if (!wbConfig) return;
@@ -227,6 +283,13 @@ export default function TopicDashboardPage() {
     fetchIndicators(codes, { startYear: 2010, endYear: 2024 })
       .then(data => { setWbData(data); setLoading(false); })
       .catch(() => setLoading(false));
+  }, [slug]);
+
+  useEffect(() => {
+    if (slug !== 'environment') return;
+    fetchCambodiaClimate()
+      .then(setClimateData)
+      .catch(() => {});
   }, [slug]);
 
   if (!cluster) {
@@ -344,6 +407,20 @@ export default function TopicDashboardPage() {
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 40 }}>
                 Source: World Bank Open Data · Cambodia (KHM) · 2010–2024
               </p>
+            )}
+
+            {/* NASA POWER climate charts — environment cluster only */}
+            {slug === 'environment' && climateData && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: '20px', marginBottom: '12px' }}>
+                  <ChartBlock title="Mean Air Temperature by Month (°C) — 2001–2020 avg" data={climateData.temperature} type="line" color="#f97316" yFormat={v => `${v.toFixed(1)}°C`} />
+                  <ChartBlock title="Average Monthly Precipitation (mm/day) — 2001–2020 avg" data={climateData.precipitation} type="bar" color="#0ea5e9" yFormat={v => `${v.toFixed(1)}`} />
+                  <ChartBlock title="Solar Irradiance — All-Sky (kWh/m²/day) — 2001–2020 avg" data={climateData.solar} type="area" color="#FFCC33" yFormat={v => `${v.toFixed(2)}`} />
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 40 }}>
+                  {climateData.attribution}
+                </p>
+              </>
             )}
 
             {/* Static charts for clusters without WB data */}
